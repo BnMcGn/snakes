@@ -17,20 +17,33 @@
      ()
   (:metaclass closer-mop:funcallable-standard-class))
 
-(defgeneric generatorp (obj))
-(defmethod generatorp ((obj t)) nil)
-(defmethod generatorp ((obj basic-generator)) t)
-
 (defmethod initialize-instance :after ((g basic-generator) &key function) 
   (with-slots () g 
     (when function
       (closer-mop:set-funcallable-instance-function g function))))
+
+(defparameter *pygen-multi-value-mode* :values)
+
+(defgeneric generatorp (obj))
+(defmethod generatorp ((obj t)) nil)
+(defmethod generatorp ((obj basic-generator)) t)
 
 (defmacro gen-lambda (params &body rest)
   "Version of lambda that wraps the anonymous function in an instance of the basic-generator class. This allows the lambda to be identified as a generator by its type. Basic-generator objects are derived from funcallable-standard-class, therefore they can be called as functions."
   `(make-instance 
     'basic-generator 
     :function (lambda ,params ,@rest)))
+
+(defmacro return-multi-value (items)
+ "Returns items according to the value of *pygen-multi-value-mode*: as a list if
+it is :list, or as values if it is :values"
+  (let ((i (gensym)))
+    `(let ((,i ,items))
+       (case *pygen-multi-value-mode*
+	 (:values (apply #'values ,i))
+	 (:list (if (= 1 (length ,i)) (car ,i) ,i))
+	 (otherwise 
+	  (error "Invalid *pygen-multi-value-mode*"))))))
 
 (defmacro with-yield (&body body)
   (let ((point (gensym))
@@ -49,7 +62,7 @@
 	       (t
 		(let ((current ,current))
 		  (kall ,point nil)
-		  (apply #'values current))))))))
+		  (return-multi-value current))))))))
 
 (defmacro defgenerator (name arguments &body body)
   `(defun ,name ,arguments
@@ -93,6 +106,7 @@ end up being used under with-call/cc, such as code under with-yield"
     `(do-generator (,x ,generator)
        (yield ,x))))
 
+
 (defmacro sticky-stop-lambda (params &body body)
   "Once a generator function has signalled a stop-iteration, it should continue to do so every time it is called. This macro helps with obeying that rule." 
   (let ((state (gensym)))
@@ -121,6 +135,8 @@ end up being used under with-call/cc, such as code under with-yield"
 	    (error 'insufficient-items "Insufficient items in generator")
 	    (reverse res))))
     (nreverse res)))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;Adaptors

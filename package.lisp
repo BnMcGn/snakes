@@ -14,13 +14,19 @@
    #:mapc-generator
    #:mapcar-generator
    #:yield-all
+   #:take
+   #:do-generators
    ;Adaptors
    #:function->generator
    #:value-func->generator
    #:list->generator
    #:list->generator-with-tail
    #:generator->list
-   #:sequence->generator))
+   #:sequence->generator
+   ;Construction tools
+   #:gen-lambda-with-sticky-stop
+   #:sticky-stop
+   #:next-generator-value))
 
 (defpackage #:pygen-test
   (:use #:cl #:pygen #:fiveam))
