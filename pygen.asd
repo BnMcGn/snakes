@@ -7,5 +7,7 @@
   :license "Specify license here"
   :depends-on (#:arnesi #:closer-mop #:fiveam)
   :components ((:file "package")
-               (:file "pygen")))
+               (:file "pygen")
+	       (:file "util"
+               (:file "do-generators")))
 

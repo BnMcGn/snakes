@@ -64,7 +64,6 @@
   (signals stop-iteration 
     (funcall (list->generator nil))))
 
-
 (test adaptors
   (is (equal '(#\a #\s #\d #\f)
 	 (generator->list (sequence->generator "asdf"))))
@@ -78,3 +77,19 @@
 		(if (< 3 x)
 		    (values nil nil)
 		    (values x t)))))))))
+
+(test do-generators
+  (is (= 40 
+	 (reduce #'+ 
+		 (generator->list 
+		  (with-yield 
+		    (do-generators ((g (some-numbers))
+				    (:list l data))
+		      (yield (+ l g))))))))
+  (is (= 48
+	 (reduce #'+ 
+		 (generator->list 
+		  (with-yield 
+		    (do-generators ((g (some-numbers))
+				    (:list l data :fill-value 0))
+		      (yield (+ l g)))))))))
