@@ -110,3 +110,14 @@ NIL"
 	      (setf ,stor nil)
 	      ,@(iterate-clauses stor varnames update-forms fillvals)
 	      ,@(var-clause stor varnames body)))))))
+
+(defun next-generator-value-filled (fill)
+  "Returns a closure that acts like next-generator-value, but returns fill when the generator runs out. The :filled keyword instead of T in the first value 
+slot still evaluates as true, but indicates that the generator has ended."
+  (lambda (gen)
+    (let ((x (next-generator-value)))
+      (if (car x)
+	  (apply #'values x)
+	  (values :filled fill)))))
+
+
