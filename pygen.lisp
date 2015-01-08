@@ -34,16 +34,16 @@
     'basic-generator 
     :function (lambda ,params ,@rest)))
 
-(defmacro return-multi-value (items)
- "Returns items according to the value of *pygen-multi-value-mode*: as a list if
+(defun pygen-multi-handler (items)
+  "Returns items according to the value of *pygen-multi-value-mode*: as a list if
 it is :list, or as values if it is :values"
-  (let ((i (gensym)))
-    `(let ((,i ,items))
-       (case *pygen-multi-value-mode*
-	 (:values (apply #'values ,i))
-	 (:list (if (= 1 (length ,i)) (car ,i) ,i))
-	 (otherwise 
-	  (error "Invalid *pygen-multi-value-mode*"))))))
+  (case *pygen-multi-value-mode*
+    (:values (apply #'values items))
+    (:list items)
+    (:single-or-list (if (= 1 (length items)) (car items) items))
+    (:single (car items))
+    (otherwise 
+	  (error "Invalid *pygen-multi-value-mode*"))))
 
 (defmacro with-yield (&body body)
   (let ((point (gensym))
@@ -62,7 +62,7 @@ it is :list, or as values if it is :values"
 	       (t
 		(let ((current ,current))
 		  (kall ,point nil)
-		  (return-multi-value current))))))))
+		  (pygen-multi-handler current))))))))
 
 (defmacro defgenerator (name arguments &body body)
   `(defun ,name ,arguments
@@ -191,7 +191,6 @@ a completion signal. Will keep emitting the first return value of the source fun
 	    (incf i))))))
 ;;;Ideas:
 
-;converters for plain functions, sequences
 ;adaptors for SERIES, others?
 ;file to generator
 ;port itertools, my tools, perhaps pytoolz

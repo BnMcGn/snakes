@@ -1,10 +1,7 @@
 
 (in-package :pygen)
 
-(defun fill-info (fillspec)
-  (if fillspec
-      (values t (cdr (assoc :fill-value fillspec)))
-      (values nil nil)))
+
 
 (defun default-handler (spec)
   (let ((data (gensym)))
@@ -115,9 +112,50 @@ NIL"
   "Returns a closure that acts like next-generator-value, but returns fill when the generator runs out. The :filled keyword instead of T in the first value 
 slot still evaluates as true, but indicates that the generator has ended."
   (lambda (gen)
-    (let ((x (next-generator-value)))
+    (let ((x (multiple-value-list (next-generator-value gen))))
       (if (car x)
 	  (apply #'values x)
 	  (values :filled fill)))))
 
+(defun fill-info (fillspec)
+  (if fillspec
+      (values t (cdr (assoc :fill-value fillspec)))
+      (values nil nil)))
 
+(defun get-generator (g)
+  (if (atom g)
+      g
+      (car g)))
+
+(defun get-nextval-func (genspec)
+  (if (atom genspec)
+      #'next-generator-value
+      (multiple-value-bind
+	    (sig val) (fill-info 
+		       (extract-keywords '(:fill-value) genspec))
+	  (if sig 
+	      (next-generator-value-filled val)
+	      #'next-generator-value))))
+			  
+(defun multi-gen (&rest genspecs)
+  (let ((generators (mapcar #'get-generator genspecs))
+	(valfuncs (mapcar #'get-nextval-func genspecs))
+	(stor nil)
+	(sigs nil))
+    (gen-lambda-with-sticky-stop ()
+      (loop for g in generators
+	 for v in valfuncs
+	 do (multiple-value-bind
+		  (sig vals) (funcall v g)
+	      (if sig
+		  (progn
+		    (push sig sigs)
+		    (push vals stor))
+		  (sticky-stop))))
+      (when
+	  (= 0 (length (remove-if (lambda (x) (eq x :filled)) sigs)))
+	(sticky-stop))
+      (prog1
+	  (pygen-multi-handler (nreverse stor))
+	(setf stor nil)
+	(setf sigs nil)))))
