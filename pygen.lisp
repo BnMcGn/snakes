@@ -22,8 +22,6 @@
     (when function
       (closer-mop:set-funcallable-instance-function g function))))
 
-(defparameter *pygen-multi-value-mode* :values)
-
 (defgeneric generatorp (obj))
 (defmethod generatorp ((obj t)) nil)
 (defmethod generatorp ((obj basic-generator)) t)
@@ -33,17 +31,6 @@
   `(make-instance 
     'basic-generator 
     :function (lambda ,params ,@rest)))
-
-(defun pygen-multi-handler (items)
-  "Returns items according to the value of *pygen-multi-value-mode*: as a list if
-it is :list, or as values if it is :values"
-  (case *pygen-multi-value-mode*
-    (:values (apply #'values items))
-    (:list items)
-    (:single-or-list (if (= 1 (length items)) (car items) items))
-    (:single (car items))
-    (otherwise 
-	  (error "Invalid *pygen-multi-value-mode*"))))
 
 (defmacro with-yield (&body body)
   (let ((point (gensym))
@@ -62,7 +49,7 @@ it is :list, or as values if it is :values"
 	       (t
 		(let ((current ,current))
 		  (kall ,point nil)
-		  (pygen-multi-handler current))))))))
+		  (apply #'values current))))))))
 
 (defmacro defgenerator (name arguments &body body)
   `(defun ,name ,arguments

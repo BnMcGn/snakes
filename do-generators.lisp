@@ -136,27 +136,17 @@ slot still evaluates as true, but indicates that the generator has ended."
 	  (if sig 
 	      (next-generator-value-filled val)
 	      #'next-generator-value))))
-
-(defun get-value-mode (genspec)
-  (if (atom genspec)
-      *pygen-multi-value-mode*
-      (aif (fetch-keyword :value-mode genspec :checklist nil)
-	   it
-	   *pygen-multi-value-mode*)))
 			  
 (defun multi-gen (&rest genspecs)
   (let ((generators (mapcar #'get-generator genspecs))
 	(valfuncs (mapcar #'get-nextval-func genspecs))
-	(valmodes (mapcar #'get-value-mode genspecs))
 	(stor nil)
 	(sigs nil))
     (gen-lambda-with-sticky-stop ()
       (loop for g in generators
 	 for v in valfuncs
-	 for vm in valmodes
 	 do (multiple-value-bind
-		  (sig vals) (let ((*pygen-multi-value-mode* vm))
-			       (funcall v g))
+		  (sig vals) (funcall v g)
 	      (if sig
 		  (progn
 		    (push sig sigs)
@@ -165,7 +155,8 @@ slot still evaluates as true, but indicates that the generator has ended."
       (when
 	  (= 0 (length (remove-if (lambda (x) (eq x :filled)) sigs)))
 	(sticky-stop))
-      (prog1
-	  (pygen-multi-handler (nreverse stor))
+      (let ((tmp stor))
 	(setf stor nil)
-	(setf sigs nil)))))
+	(setf sigs nil)
+	(values (nreverse tmp))))))
+       
