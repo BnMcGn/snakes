@@ -16,6 +16,7 @@
    #:yield-all
    #:take
    #:do-generators
+   #:multi-gen
    ;Adaptors
    #:function->generator
    #:value-func->generator

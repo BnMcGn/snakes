@@ -2,112 +2,6 @@
 (in-package :pygen)
 
 
-
-(defun default-handler (spec)
-  (let ((data (gensym)))
-    (values data
-	    (last-car spec)
-	    (butlast spec) ;Var names
-	    `(next-generator-value ,data))))
-
-(defun list-handler (spec)
-    (let ((data (gensym)))
-      (values data ;Gensym for list storage
-	      (last-car spec) ;List source form. Once-only-ed.
-	      (butlast (cdr spec)) ;Var name - should only have one!
-	      (list-update data)))) ;Form that returns item from list
-  
-;gensym sourceform vars update-form
-
-(defun list-update (resource)
-  `(if (consp ,resource)
-       (values
-	t
-	(prog1
-	    (car ,resource)
-	  (setf ,resource (cdr ,resource))))
-       (values nil nil)))
-
-(defun iterate-clause (stor varnames update-form fill-val)
-  `(destructuring-bind (sig . data)
-       (multiple-value-list ,update-form)
-     (if sig
-	 (push (subseq data 0 ,(length varnames)) ,stor)
-	 ,(if fill-val
-	     `(push (list ,@(loop for i from 1 to (length varnames)
-			       collect (car fill-val))) ,stor)
-	     '(return))))) ;This item is finished. Terminate do-generators.
-
-(defun iterate-clauses (stor varnameses update-forms fill-vals)
-  (if (null varnameses)
-      nil
-      (cons 
-       (iterate-clause 
-	stor (car varnameses) (car update-forms) (car fill-vals))
-       (iterate-clauses
-       stor (cdr varnameses) (cdr update-forms) (cdr fill-vals)))))
-
-(defun process-genspecs (genspecs)
-  (with-collectors ((varnames) (fillvals) (orig-sources) 
-		    (sources) (update-forms))
-    (dolist (genspec genspecs)
-      (multiple-value-bind (fill spec)
-	  (extract-keywords '(:fill-value) genspec)
-	(multiple-value-bind (source orig-source names update-form)
-	    (if (eq :list (car spec))
-		(list-handler spec)
-		(default-handler spec))
-	  (sources source)
-	  (orig-sources orig-source)
-	  (varnames names)
-	  (update-forms update-form))
-	(multiple-value-bind (sig filler)
-	    (fill-info fill)
-	  (if sig
-	      (fillvals (list filler))
-	      (fillvals nil)))))
-    (values (varnames) (fillvals) (orig-sources) (sources) (update-forms))))
-
-(defun var-clause (datavar vars body &optional (counter nil))
-  (let ((counter (or counter (1- (length vars)))))
-    (if vars
-	(var-clause
-	 datavar
-	 (cdr vars)
-	 `((destructuring-bind 
-		 ,(car vars)
-	       (elt ,datavar ,counter)
-	     ,@body))
-	 (1- counter))
-	body)))
-
-(defmacro do-generators (genspecs &body body)
-  "Simultaneously iterate through multiple generators at once. By default 
-do-generators terminates when the shortest generator ends, but individual 
-generators can be padded out with the :fill-value keyword. Do-generators can 
-also iterate over lists in parallel with generators. To use lists, start the genspec with the :list keyword. Eg:
-  (do-generators ((a (repeat 2))
-			 (:list b '(4 5 6))
-			 (c (list->generator '(8 9)) :fill-value 30))
-	   (print (* a (+ b c))))
-24 
-28 
-72 
-NIL"
-  (multiple-value-bind 
-	(varnames fillvals orig-sources sources update-forms)
-      (process-genspecs genspecs)
-    (let ((stor (gensym)))
-      `(let ((,stor nil)
-	     ,@(loop for osource in orig-sources
-		  for src in sources
-		  collect (list src osource)))
-	 (loop do 
-	    (progn
-	      (setf ,stor nil)
-	      ,@(iterate-clauses stor varnames update-forms fillvals)
-	      ,@(var-clause stor varnames body)))))))
-
 (defun next-generator-value-filled (fill)
   "Returns a closure that acts like next-generator-value, but returns fill when the generator runs out. The :filled keyword instead of T in the first value 
 slot still evaluates as true, but indicates that the generator has ended."
@@ -145,12 +39,11 @@ slot still evaluates as true, but indicates that the generator has ended."
     (gen-lambda-with-sticky-stop ()
       (loop for g in generators
 	 for v in valfuncs
-	 do (multiple-value-bind
-		  (sig vals) (funcall v g)
-	      (if sig
+	 do (let ((data (multiple-value-list (funcall v g))))
+	      (if (car data)
 		  (progn
-		    (push sig sigs)
-		    (push vals stor))
+		    (push (car data) sigs)
+		    (push (cdr data) stor))
 		  (sticky-stop))))
       (when
 	  (= 0 (length (remove-if (lambda (x) (eq x :filled)) sigs)))
@@ -158,5 +51,74 @@ slot still evaluates as true, but indicates that the generator has ended."
       (let ((tmp stor))
 	(setf stor nil)
 	(setf sigs nil)
-	(values (nreverse tmp))))))
-       
+	(apply #'values (nreverse tmp))))))
+
+
+
+(defun proc-list-spec (spec)
+  (if (eq :list (car spec))
+      (labels ((proc (rspec)
+		 (when (atom rspec)
+		   (error ":list spec needs at least a var a list"))
+		 (if (or (keywordp (second rspec)) (not (cdr rspec)))
+		     (cons `(list->generator ,(car rspec)) (cdr rspec))
+		     (cons (car rspec) (proc (cdr rspec))))))
+	(proc (cdr spec)))
+      spec))
+
+(defun process-genspecs (genspecs)
+  (with-collectors ((varnames<) (short-specs<))
+    (dolist (genspec genspecs)
+      (multiple-value-bind (fill spec)
+	  (extract-keywords '(:fill-value) genspec)
+	(varnames< (butlast spec))
+	(short-specs< 
+	 (if fill
+	     (list
+	      'list
+	      (last-car spec)
+	      :fill-value
+	      (cdr (assoc :fill-value fill)))
+	     (last-car spec)))))
+    (values (varnames<) (short-specs<))))
+
+(defun bind-clause (datavar varnames body)
+  `(let
+     ,(with-collectors (col<)
+	  (loop for vnames in varnames
+	     for i from 0
+	     do (loop for vn in vnames
+		   for j from 0
+		     do
+		       (col< `(,vn (elt (elt ,datavar ,i) ,j)))))
+	  (col<))
+     ,@body))
+	    
+  
+(defmacro do-generators (genspecs &body body)
+  "Simultaneously iterate through multiple generators at once. By default 
+do-generators terminates when the shortest generator ends, but individual 
+generators can be padded out with the :fill-value keyword. Do-generators can 
+also iterate over lists in parallel with generators. To use lists, start the genspec with the :list keyword. Eg:
+  (do-generators ((a (repeat 2))
+			 (:list b '(4 5 6))
+			 (c (list->generator '(8 9)) :fill-value 30))
+	   (print (* a (+ b c))))
+24 
+28 
+72 
+NIL"
+  (let ((genspecs (mapcar #'proc-list-spec genspecs))
+	(genr (gensym))
+	(data (gensym))
+	(sig (gensym)))
+    (multiple-value-bind (varnames specs)
+	(process-genspecs genspecs)
+      
+      `(let ((,genr (multi-gen ,@specs)))
+	 (loop do
+	   (destructuring-bind (,sig . ,data) 
+	       (multiple-value-list (next-generator-value ,genr))
+	     (unless ,sig
+	       (return))
+	     ,(bind-clause data varnames body)))))))
