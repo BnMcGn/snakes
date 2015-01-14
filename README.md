@@ -8,14 +8,14 @@ Generators
 
 Generators are functions that lazily return a sequence of items, one item per call. Eg:
 
->CL-USER> (defvar genr (list->generator '(1 2 3 4)))
->GENR
->CL-USER> (funcall genr)
->1
->CL-USER> (funcall genr)
->2
->CL-USER> (funcall genr)
->3
+>    CL-USER> (defvar genr (list->generator '(1 2 3 4)))
+>    GENR
+>    CL-USER> (funcall genr)
+>    1
+>    CL-USER> (funcall genr)
+>    2
+>    CL-USER> (funcall genr)
+>    3
 
 Generators retain state information between calls. They're useful for stepping through finite resources such as files and lists, but they can also be infinite, as when used for creating mathematical sequences.
 
