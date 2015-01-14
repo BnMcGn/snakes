@@ -11,6 +11,7 @@
    #:generatorp
    #:gen-lambda
    #:do-generator
+   #:do-generator-value-list
    #:mapc-generator
    #:mapcar-generator
    #:yield-all
@@ -27,7 +28,24 @@
    ;Construction tools
    #:gen-lambda-with-sticky-stop
    #:sticky-stop
-   #:next-generator-value))
+   #:next-generator-value
+   ;Itertools
+   #:icount
+   #:cycle
+   #:repeat
+   #:chain
+   #:izip
+   #:izip-longest
+   #:compress
+   #:dropwhile
+   #:takewhile
+   #:groupby
+   #:ifilter
+   #:ifilter-false
+   #:islice
+   #:imap
+   #:starmap
+   #:tee))
 
 (defpackage #:pygen-test
   (:use #:cl #:pygen #:fiveam))

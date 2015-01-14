@@ -76,6 +76,18 @@ end up being used under with-call/cc, such as code under with-yield"
 		 (return))
 	       ,@body)))))
 
+(defmacro do-generator-value-list ((var generator) &body body)
+  "Like do-generator, except all values emitted by the generator are placed in a list under the user defined variable."
+  (let ((g (gensym))
+	(sig (gensym)))
+    `(let ((,g ,generator))
+       (loop 
+	  do (destructuring-bind (,sig . ,var)
+		 (next-generator-value ,g)
+	       (unless ,sig
+		 (return))
+	       ,@body)))))
+
 (defun mapc-generator (function generator)
   (do-generator (item generator)
     (funcall function item))

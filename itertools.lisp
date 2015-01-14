@@ -1,5 +1,7 @@
 
-(defgenerator counter (n &optional (step 1))
+(in-package :pygen)
+
+(defgenerator icount (n &optional (step 1))
   "Make a generator that returns evenly spaced values starting with n. Step can be fractional. Eg:
    (counter 10) -> 10 11 12 13 14 ...
    (counter 2.5 0.5) -> 2.5 3.0 3.5 ..."
@@ -46,36 +48,17 @@ Note that this tool may consume considerable storage if the source iterable is l
     (yield (mapcar #'car vars))))
 
 (defgenerator izip-longest (&rest generators-and-fill-value)
-  (multiple-value-bind (fillspec gens)
-      (pygen::extract-keywords 
-
-
-(defun izip (generators)
-  ; &key (output-values t) (fill-value nil fill-p
-  (let (;(output-values t)
-	(fill-value nil)
-	(fill-p nil)
-	(outfunc #'values ));(if output-values #'values #'list)))
-    (if fill-p
-	(gen-lambda-with-sticky-stop ()
-	  (let ((stor)
-		(flag))
-	    (dolist (g generators)
-	      (multiple-value-bind (sig val) 
-		  (next-generator-value g)
-		(setf flag (or flag sig))
-		(push (if sig val fill-value) stor)))
-	    (if flag
-		(apply outfunc (nreverse stor))
-		(sticky-stop))))
-	(gen-lambda-with-sticky-stop ()
-	  (let ((stor))
-	    (dolist (g generators)
-	      (multiple-value-bind (sig val)
-		  (next-generator-value g)
-		(unless sig (sticky-stop))
-		(push val stor)))
-	    (apply outfunc (nreverse stor)))))))
+  (multiple-value-bind (keywords gens)
+      (extract-keywords '(:fill-value) generators-and-fill-value)
+    (let ((fillspec (cdr (assoc :fill-value keywords))))
+      (unless fillspec
+	(error "Izip-longest requires a :fill-value parameter"))
+      (do-generator-value-list 
+	  (vars
+	   (apply #'multi-gen
+		  (loop for g in gens
+		       collect (list g :fill-value fillspec))))
+	(yield (mapcar #'car vars))))))
 				    
 (defgenerator compress (data selectors)
   "Moves through the data and selectors generators in parallel, only yielding elements of data that are paired with a value from selectors that evaluates to true. Eg:
@@ -171,32 +154,6 @@ values of the supplied generators, emitting the result. Eg:
 
 (defun append! (lst obj)
   (setf (cdr (last lst)) obj))
-
-(defun tee (generator &optional (n 2))
-  (let ((stor (cons nil nil)) ;First nil is a dummy value
-	(stop-marker (gensym)))
-    (labels ((get-next ()
-	       (let* ((data (multiple-value-list 
-			    (next-generator-value generator)))
-		      (curr (if (car data)
-				(cons (cdr data) nil)
-				(cons stop-marker nil))))
-		 (append! stor curr)
-		 (setf stor curr))))
-      (with-collectors (gens<)
-	(dotimes (i n)
-	  (gens<
-	   (let ((ldata stor))
-	     (with-yield
-	       (loop do
-		    (progn
-		      (unless (cdr ldata)
-			(get-next))
-		      (if (eq (car ldata) stop-marker)
-			  (return)
-			  (yield (car ldata)))
-		      (setf ldata (cdr ldata))))))))
-	(gens<)))))
       
 (defun tee (generator &optional (n 2))
   "Creates independent copies of generator, returned as values. If the child generators are consumed at different times, tee will store all of the items from the least consumed child generator through to the most. It can, if used incautiously, require considerable memory. 

@@ -9,6 +9,7 @@
   :components ((:file "package")
                (:file "pygen")
 	       (:file "util")
-               (:file "do-generators")))
+               (:file "do-generators")
+               (:file "itertools")))
 
 
