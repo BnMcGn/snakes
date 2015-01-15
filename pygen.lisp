@@ -135,7 +135,16 @@ end up being used under with-call/cc, such as code under with-yield"
 	    (reverse res))))
     (nreverse res)))
 
-
+(defun consume (n gen &key (fail-if-short t))
+  "Takes N items from generator gen, returning nothing. If the generator contains less than n items, consume will empty the generator silently if fail-if-short is set to nil, otherwise it will raise an error."
+  (handler-case
+      (dotimes (i n)
+	 (funcall gen))
+      (stop-iteration ()
+	(if fail-if-short
+	    (error 'insufficient-items "Insufficient items in generator")
+	    nil)))
+    nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;Adaptors

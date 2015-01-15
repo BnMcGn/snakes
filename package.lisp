@@ -16,6 +16,7 @@
    #:mapcar-generator
    #:yield-all
    #:take
+   #:consume
    #:do-generators
    #:multi-gen
    ;Adaptors
