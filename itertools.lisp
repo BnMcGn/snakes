@@ -44,15 +44,17 @@ Note that this tool may consume considerable storage if the source iterable is l
     (yield-all g)))
 
 (defgenerator izip (&rest generators)
+  "Steps through multiple generators in parallel, emitting each of their items as values. Stops with the end of the shortest source generator."
   (do-generator-value-list (vars (apply #'multi-gen generators))
     (yield (mapcar #'car vars))))
 
 (defgenerator izip-longest (&rest generators-and-fill-value)
+  "Steps through multiple generators in parallel, emitting each of their items as values. Keeps going until the end of the longest source generator, padding the rest out with the value specified by :fill-value"
   (multiple-value-bind (keywords gens)
       (extract-keywords '(:fill-value) generators-and-fill-value)
-    (let ((fillspec (cdr (assoc :fill-value keywords))))
-      (unless fillspec
-	(error "Izip-longest requires a :fill-value parameter"))
+    (let ((fillspec (if keywords
+			(cdr (assoc :fill-value keywords))
+			nil)))
       (do-generator-value-list 
 	  (vars
 	   (apply #'multi-gen
@@ -182,5 +184,30 @@ Note also that this implementation of tee does not create independent copies of 
 		   (apply #'values (ensure-list (car ldata))))))))
 	(apply #'values (gens<))))))
 
+(defmacro product (&rest lists)
+  "Iterates through each of the supplied lists with nested dolists, yielding an element from each for every iteration of the innermost loop. The yielded values cycle in an odometer-like fashion, with the first value changing seldom and the last changing on every yield. Eg:
+  (product '(a b c d) '(x y)) -(values)-> (a x) (a y) (b x) (b y) (c x) (c y)...
 
+Note: product is a macro. Because the number of its arguments must be available at runtime, it can't be called with apply."
+  (let ((symlist (loop for i from 1 to (length lists)
+		      collecting (gensym))))
+  (labels ((gencode (lists syms)
+	     (if (null lists)
+		 `(yield ,@symlist)
+		 `(dolist (,(car syms) ,(car lists))
+		    ,(gencode (cdr lists) (cdr syms))))))
+    `(with-yield
+       ,(gencode lists symlist)))))
+
+(defgenerator product (&rest lists)
+  (labels ((listholder (lists)
+	     (if (null lists)
+		 (lambda (stack)
+		   (apply #'yield (reverse stack)))
+		 (let ((nextfunc
+			(listholder (cdr lists))))
+		   (lambda (stack)
+		     (dolist (itm (car lists))
+		       (funcall nextfunc (cons itm stack))))))))
+    (funcall (listholder lists) nil)))
 
