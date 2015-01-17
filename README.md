@@ -28,10 +28,10 @@ Examples
 
 Creating
 --------
-    >(defgenerator some-numbers ()
-       (loop for i from 1 upto 3 do (yield i))
-       (print 'some-message)
-       (loop for i from 8 upto 9 do (yield i)))
+    > (defgenerator some-numbers ()
+        (loop for i from 1 upto 3 do (yield i))
+        (print 'some-message)
+        (loop for i from 8 upto 9 do (yield i)))
 
 Note: defgenerator doesn't create a generator. It defines a function that returns a new generator each time it is called. 
 
@@ -48,9 +48,9 @@ Consuming
 
 Anonymous generator
 -------------------
-    (with-yield
-      (dotimes (i 10)
-        (yield (expt 2 i))))
+    > (with-yield
+        (dotimes (i 10)
+          (yield (expt 2 i))))
 
     #<BASIC-GENERATOR {C0131CD}>
 
@@ -102,11 +102,41 @@ Yield-all
     G
     H
 
+Yield-all should only be used inside of a defgenerator or with-yield block. It expects a generator, which it consumes and emits through its enclosing generator.
 
-Implementation 
-==============
+
+Other generator creation issues
+===============================
+
+Can plain functions or closures be used as generators? Yes. For example:
+
+    > (lambda (x)
+        (lambda () x))
+
+will work as an infinite generator that returns only one value. The caveat being that the generatorp function will not be able to recognize it as a generator. So far that's not a problem: nothing uses generatorp, but future code may do so. Therefore:
+
+    > (lambda (x)
+        (gen-lambda () x))
+
+You can the gen-lambda macro for the inner lambda. It wraps your lambda in a (funcallable) basic-generator object.
+
+Stopping the generator correctly is the other problem.
 
 Like in python, pygen generators raise a signal - stop-iteration - when they terminate. Some lisp generator implementations use the second value to signal termination. Pygen is implemented with a signal stop to free up the value channels for user purposes.
+
+Once a generator sends stop-iteration, it should continue to do so every time it is called. There is a convenience macro to make this behavior easier to accomplish: gen-lambda-with-sticky-stop
+
+    > (defun function->generator (source-func predicate)
+      "Returns a generator that repeatedly calls source-func, tests the result against the predicate function, terminates when the predicate tests false, otherwise yielding the result"
+        (gen-lambda-with-sticky-stop ()  
+          (let ((res (funcall source-func)))
+	    (if (funcall predicate res)
+	        res
+	        (sticky-stop)))))
+
+When sticky-stop is called it signals a stop-iteration. In subsequent calls to the function, none of the body code will be run. Stop-iteration will be immediately signalled.
+
+
 
 Author
 ======
