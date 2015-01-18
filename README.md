@@ -104,6 +104,30 @@ Yield-all
 
 Yield-all should only be used inside of a defgenerator or with-yield block. It expects a generator, which it consumes and emits through its enclosing generator.
 
+For Python Programmers
+======================
+
+Seeing that pygen was created to make the python emigré (author included) more comfortable in Common Lisp, here are some transitional examples:
+
+Python: 
+
+    (x/2 for x in iter)
+
+Pygen:
+    
+    (with-yield
+      (do-generator (x iter)
+        (yield (/ x 2))))
+
+Pygen's goal is to recreate the concept of python generators while staying within the bounds of lisp idiom convention. Its goal is not to look like python. So it doesn't implement for... in style syntax. Not to say it can't be done: see [ergolib](https://github.com/rongarret/ergolib).
+
+Python:
+
+    (x for x in y for y in iter if pred(x))
+
+
+
+
 
 Other generator creation issues
 ===============================
@@ -118,7 +142,7 @@ will work as an infinite generator that returns only one value. The caveat being
     > (lambda (x)
         (gen-lambda () x))
 
-You can the gen-lambda macro for the inner lambda. It wraps your lambda in a (funcallable) basic-generator object.
+You can use the gen-lambda macro for the inner lambda. It wraps your lambda in a (funcallable) basic-generator object.
 
 Stopping the generator correctly is the other problem.
 
@@ -136,6 +160,10 @@ Once a generator sends stop-iteration, it should continue to do so every time it
 
 When sticky-stop is called it signals a stop-iteration. In subsequent calls to the function, none of the body code will be run. Stop-iteration will be immediately signalled.
 
+Writing consumers
+-----------------
+
+Because with-yield/yield is based on the Arnesi CPS transformer, any code that is going to be run in a with-yield or defgenerator block must be designed with its limitations in mind. You can't, for example, directly handle signals in such code. See the source of do-generators and next-generator-value for an example.
 
 
 Author
