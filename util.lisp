@@ -47,6 +47,9 @@
 (defun last-car (list)
   (car (last list)))
 
+(defmacro multiple-value-destructure (lambda-list expression &body body)
+  `(destructuring-bind ,lambda-list (multiple-value-list ,expression)
+     ,@body))
 
 (defun keyword-splitter (data &key (flatten t))
   (if data
@@ -68,6 +71,8 @@
 	       (cons (cons (car data) this) 
 		     (keyword-splitter next :flatten flatten))))
 	    (t (error "Missing keyword")))))
+
+
 
 (defun keyword-value (key alist)
   (if alist
@@ -103,25 +108,6 @@
 		      `(when ,test (returner ,retval))))
 	   ,@body)))))
 
-;anaphoric macro: 2nd expr wraps first (which is contained in it) if true,
-;else expr run plain.
-(defmacro awrap-expr-if (pred expr &body cond-expr-with-var-it)
-  `(if ,pred
-       (funcall
-	(lambda (it)
-	  ,@cond-expr-with-var-it)
-	,expr)
-       ,expr))
-
-(defun aslist (itm)
-  (if (listp itm)
-      itm
-      (list itm)))
-
-(defmacro aif2only (test &optional then else)
-	   (let ((win (gensym)))
-	     `(multiple-value-bind (it ,win) ,test
-		(if ,win ,then ,else))))
 
 
 (defmacro do-file-by-line ((line stream-or-path) &body body)

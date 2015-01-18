@@ -82,7 +82,7 @@ end up being used under with-call/cc, such as code under with-yield"
 	(sig (gensym)))
     `(let ((,g ,generator))
        (loop 
-	  do (destructuring-bind (,sig . ,var)
+	  do (multiple-value-destructure (,sig . ,var)
 		 (next-generator-value ,g)
 	       (unless ,sig
 		 (return))
@@ -186,7 +186,16 @@ a completion signal. Will keep emitting the first return value of the source fun
 	    (setf data (cdr data)))))))
 
 (defun generator->list (gen)
-  (mapcar-generator #'identity gen))
+  (let ((stor (multiple-value-destructure (sig . rest) 
+		  (next-generator-value gen)
+		(when sig
+		  (mapcar #'list rest)))))
+    (do-generator-value-list (g gen)
+      (setf stor
+	    (loop for pile in stor
+		 for new in g
+		 collect (cons new pile))))
+    (apply #'values (mapcar #'nreverse stor))))
 
 (defun sequence->generator (seq)
   (let ((seqlen (length seq))
