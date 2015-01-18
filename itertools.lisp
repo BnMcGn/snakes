@@ -184,22 +184,10 @@ Note also that this implementation of tee does not create independent copies of 
 		   (apply #'values (ensure-list (car ldata))))))))
 	(apply #'values (gens<))))))
 
-(defmacro product (&rest lists)
-  "Iterates through each of the supplied lists with nested dolists, yielding an element from each for every iteration of the innermost loop. The yielded values cycle in an odometer-like fashion, with the first value changing seldom and the last changing on every yield. Eg:
-  (product '(a b c d) '(x y)) -(values)-> (a x) (a y) (b x) (b y) (c x) (c y)...
-
-Note: product is a macro. Because the number of its arguments must be available at runtime, it can't be called with apply."
-  (let ((symlist (loop for i from 1 to (length lists)
-		      collecting (gensym))))
-  (labels ((gencode (lists syms)
-	     (if (null lists)
-		 `(yield ,@symlist)
-		 `(dolist (,(car syms) ,(car lists))
-		    ,(gencode (cdr lists) (cdr syms))))))
-    `(with-yield
-       ,(gencode lists symlist)))))
-
 (defgenerator product (&rest lists)
+"Iterates through each of the supplied lists with nested dolists, yielding an element from each for every iteration of the innermost loop. The yielded values cycle in an odometer-like fashion, with the first value changing seldom and the last changing on every yield. Eg:
+  (product '(a b c d) '(x y)) -(values)-> (a x) (a y) (b x) (b y) (c x) (c y)...
+"
   (labels ((listholder (lists)
 	     (if (null lists)
 		 (lambda (stack)
@@ -211,3 +199,45 @@ Note: product is a macro. Because the number of its arguments must be available 
 		       (funcall nextfunc (cons itm stack))))))))
     (funcall (listholder lists) nil)))
 
+(defgenerator permutations (list &optional r)
+  "Emits every possible permutation of the items in list in a set of size r. If r is not specified, the size of list is used. Eg:
+   (permutations '(a b c d) 2) -(values)-> (a b) (a c) (a d) (b a) (b c) (b d) 
+ (c a) (c b) (c d) (d a) (d b) (d c)"
+  (let ((r (or r (length list))))
+    (labels ((proc (data output)
+	       (if (= r (length output))
+		   (apply #'yield (reverse output))
+		   (dotimes (i (length data))
+		     (proc (xsubseq data i i :type 'list)
+			   (cons (elt data i) output))))))
+      (proc list nil))))
+
+(defgenerator combinations (list r)
+  "Emits every possible combination of the items in list in sets of size r. Eg:
+   (combinations '(a b c d) 2) -(values)-> (a b) (a c) (a d) (b c) (b d) (c d)"
+  (if (< (length list) r)
+    (lambda () (signal 'stop-iteration))
+    (labels ((proc (data output r)
+	       (if (= 0 r)
+		 (apply #'yield (reverse output))
+		 (loop for i from 0 to r
+		    for d on data
+		    do (proc (cdr d)
+			     (cons (car d) output)
+			     (1- r))))))
+      (proc list nil r))))
+
+(defgenerator combinations-with-replacement (list r)
+  "Emits every possible combination, including repetitions, of the items in list in sets of size r. Eg: 
+   (combinations-with-replacement '(a b c) 2) -(values)-> (a a) (a b) (a c) 
+ (b b) (b c) (c c)"
+  (labels ((proc (data output r)
+	     (if (= 0 r)
+		 (apply #'yield (reverse output))
+		 (loop for d on data
+		      do (proc d
+			       (cons (car d) output)
+			       (1- r))))))
+    (if (and (length list) (<= r (length list) ))
+	(proc list nil r)
+	(lambda () (signal 'stop-iteration)))))
