@@ -13,6 +13,8 @@
 (define-condition insufficient-items (pygen-error) ()
   (:documentation "Generator has run out of items before expected."))
 
+(defparameter *pygen-multi-mode* :values)
+
 (defclass basic-generator ()
      ()
   (:metaclass closer-mop:funcallable-standard-class))
@@ -28,9 +30,18 @@
 
 (defmacro gen-lambda (params &body rest)
   "Version of lambda that wraps the anonymous function in an instance of the basic-generator class. This allows the lambda to be identified as a generator by its type. Basic-generator objects are derived from funcallable-standard-class, therefore they can be called as functions."
-  `(make-instance 
-    'basic-generator 
-    :function (lambda ,params ,@rest)))
+  `(let ((values-handler (create-values-handler)))
+     (make-instance 
+      'basic-generator 
+      :function (lambda ,params ,@rest))))
+
+(defun create-values-handler ()
+  "Returns a function to transform ready-to-be-yielded values according to *pygen-multi-mode*. This should be set up at generator creation time, not at consumption time, so that generators in a chain can be set individually."
+  (case *pygen-multi-mode*
+    (:values #'identity)
+    (:list #'list)
+    (otherwise
+     (error "*pygen-multi-mode* setting not supported"))))
 
 (defmacro with-yield (&body body)
   (let ((point (gensym))
@@ -49,7 +60,8 @@
 	       (t
 		(let ((current ,current))
 		  (kall ,point nil)
-		  (apply #'values current))))))))
+		  ;values-handler: see gen-lambda
+		  (apply #'values (funcall values-handler current)))))))))
 
 (defmacro defgenerator (name arguments &body body)
   `(defun ,name ,arguments

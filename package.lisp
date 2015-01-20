@@ -9,7 +9,6 @@
    #:defgenerator
    #:basic-generator
    #:generatorp
-   #:gen-lambda
    #:do-generator
    #:do-generator-value-list
    #:mapc-generator
@@ -19,6 +18,7 @@
    #:consume
    #:do-generators
    #:multi-gen
+   #:*pygen-multi-mode*
    ;Adaptors
    #:function->generator
    #:value-func->generator
@@ -27,6 +27,7 @@
    #:generator->list
    #:sequence->generator
    ;Construction tools
+   #:gen-lambda
    #:gen-lambda-with-sticky-stop
    #:sticky-stop
    #:next-generator-value
@@ -46,7 +47,11 @@
    #:islice
    #:imap
    #:starmap
-   #:tee))
+   #:tee
+   #:product
+   #:permutations
+   #:combinations
+   #:combinations-with-replacement))
 
 (defpackage #:pygen-test
   (:use #:cl #:pygen #:fiveam))
