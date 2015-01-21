@@ -145,8 +145,8 @@ end up being used under with-call/cc, such as code under with-yield"
       (handler-case
 	  (dotimes (i (1- n))
 	    (loop for val in (multiple-value-list (funcall gen))
-		 for s in stor
-		 do (push val s)))
+		 for j from 0
+		 do (push val (elt stor j))))
 	(stop-iteration ()
 	  (if fail-if-short
 	      (error 'insufficient-items "Insufficient items in generator")
