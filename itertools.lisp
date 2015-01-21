@@ -46,7 +46,7 @@ Note that this tool may consume considerable storage if the source iterable is l
 (defgenerator izip (&rest generators)
   "Steps through multiple generators in parallel, emitting each of their items as values. Stops with the end of the shortest source generator."
   (do-generator-value-list (vars (apply #'multi-gen generators))
-    (yield (mapcar #'car vars))))
+    (apply #'yield (mapcar #'car vars))))
 
 (defgenerator izip-longest (&rest generators-and-fill-value)
   "Steps through multiple generators in parallel, emitting each of their items as values. Keeps going until the end of the longest source generator, padding the rest out with the value specified by :fill-value"
@@ -60,13 +60,13 @@ Note that this tool may consume considerable storage if the source iterable is l
 	   (apply #'multi-gen
 		  (loop for g in gens
 		       collect (list g :fill-value fillspec))))
-	(yield (mapcar #'car vars))))))
+	(apply #'yield (mapcar #'car vars))))))
 				    
 (defgenerator compress (data selectors)
   "Moves through the data and selectors generators in parallel, only yielding elements of data that are paired with a value from selectors that evaluates to true. Eg:
    (compress (list->generator '(a b c d e f))
              (list->generator '(t nil t nil t t))) -> a c e f"
-  (do-generator (d s (izip (list data selectors)))
+  (do-generator (d s (izip data selectors))
     (when s
       (yield d))))
 
@@ -121,13 +121,13 @@ Note that this tool may consume considerable storage if the source iterable is l
     (generator stop-or-start 
 	       &optional (stop nil has-stop-p) step)
 "Emits a subrange of generator. If only stop-or-start is set, islice will emit up to it and stop. If both stop-or-start and stop are set, islice will emit the stretch between stop and start. If step is set, then islice will emit every step-th item between start and stop. If stop is set to nil, then islice will continue through the source generator until it terminates. Eg:
-   (islice (list->generator '(a b c d e f g) 2)) -> A B
-   (islice (list->generator '(a b c d e f g) 2 4)) -> C D
-   (islice (list->generator '(a b c d e f g) 2 nil)) -> C D E F G
-   (islice (list->generator '(a b c d e f g) 0 nil 2)) -> A C E G"
+   (islice (list->generator '(a b c d e f g)) 2) -> A B
+   (islice (list->generator '(a b c d e f g)) 2 4) -> C D
+   (islice (list->generator '(a b c d e f g)) 2 nil) -> C D E F G
+   (islice (list->generator '(a b c d e f g)) 0 nil 2) -> A C E G"
   (let 
       ((start (if has-stop-p stop-or-start nil))
-       (stop (or stop stop-or-start))
+       (stop (or stop (unless has-stop-p stop-or-start)))
        (step (or step 1)))
     (when start
       (consume start generator))
@@ -146,7 +146,7 @@ Note that this tool may consume considerable storage if the source iterable is l
 values of the supplied generators, emitting the result. Eg:
    (imap #'* (list->generator  '(2 3 4)) (list->generator '(4 5 6))) -> 8 15 24"
   (do-generator-value-list (vals (apply #'multi-gen generators))
-    (yield (apply function vals))))
+    (yield (apply function (mapcar #'car vals)))))
 
 (defgenerator starmap (function generator)
   "Sequentially applies the function to the output of the generator. Like imap, but assumes that the contents of the generator are already merged. Eg:
