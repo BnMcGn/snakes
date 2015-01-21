@@ -137,16 +137,22 @@ end up being used under with-call/cc, such as code under with-yield"
 
 (defun take (n gen &key (fail-if-short t))
   "Takes n items from generator gen, returning them as a list. If the generator  contains less than n items, take will return what is available if fail-if-short is set to nil, otherwise it will raise an error."
-  (let ((res nil))
-    (handler-case
-	(dotimes (i n)
-	  (push (funcall gen) res))
-      (stop-iteration ()
-	(if fail-if-short
-	    (error 'insufficient-items "Insufficient items in generator")
-	    (reverse res))))
-    (nreverse res)))
-
+  (let ((stor (multiple-value-destructure (sig . rest) 
+		  (next-generator-value gen)
+		(when sig
+		  (mapcar #'list rest)))))
+    (when stor
+      (handler-case
+	  (dotimes (i (1- n))
+	    (loop for val in (multiple-value-list (funcall gen))
+		 for s in stor
+		 do (push val s)))
+	(stop-iteration ()
+	  (if fail-if-short
+	      (error 'insufficient-items "Insufficient items in generator")
+	      (apply #'values (mapcar #'reverse stor)))))
+      (apply #'values (mapcar #'nreverse stor)))))
+  
 (defun consume (n gen &key (fail-if-short t))
   "Takes N items from generator gen, returning nothing. If the generator contains less than n items, consume will empty the generator silently if fail-if-short is set to nil, otherwise it will raise an error."
   (handler-case
