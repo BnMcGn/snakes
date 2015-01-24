@@ -60,8 +60,8 @@
 	      #'identity 
 	      (flatten '((a (b c) d) (e) f (g h)))))))
 
-(test stop-iteration
-  (signals stop-iteration 
+(test generator-stop
+  (eq 'generator-stop
     (funcall (list->generator nil))))
 
 (test adaptors

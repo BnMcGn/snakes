@@ -219,7 +219,7 @@ Note also that this implementation of tee does not create independent copies of 
   "Emits every possible combination of the items in list in sets of size r. Eg:
    (combinations '(a b c d) 2) -(values)-> (a b) (a c) (a d) (b c) (b d) (c d)"
   (if (< (length list) r)
-    (lambda () (signal 'stop-iteration))
+    (lambda () 'generator-stop)
     (labels ((proc (data output r)
 	       (if (= 0 r)
 		 (apply #'yield (reverse output))
@@ -243,4 +243,4 @@ Note also that this implementation of tee does not create independent copies of 
 			       (1- r))))))
     (if (and (length list) (<= r (length list) ))
 	(proc list nil r)
-	(lambda () (signal 'stop-iteration)))))
+	(lambda () 'generator-stop))))

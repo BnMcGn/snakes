@@ -4,9 +4,6 @@
 
 ;;; "pygen" goes here. Hacks and glory await!
 
-(define-condition stop-iteration (condition)
-  ()
-  (:documentation "Generators send this to signal that they have reached their end"))
 
 (define-condition pygen-error (error) ())
 
@@ -31,6 +28,7 @@
 (defmacro gen-lambda (params &body rest)
   "Version of lambda that wraps the anonymous function in an instance of the basic-generator class. This allows the lambda to be identified as a generator by its type. Basic-generator objects are derived from funcallable-standard-class, therefore they can be called as functions."
   `(let ((values-handler (create-values-handler)))
+     (declare (ignorable values-handler))
      (make-instance 
       'basic-generator 
       :function (lambda ,params ,@rest))))
@@ -56,7 +54,7 @@
 	   (setf ,point nil)))
        (gen-lambda ()
 	 (cond ((null ,point)
-		(signal 'stop-iteration))
+		'generator-stop)
 	       (t
 		(let ((current ,current))
 		  (kall ,point nil)
@@ -68,13 +66,12 @@
      (with-yield
        ,@body)))
 
+
 (defun next-generator-value (gen)
-  "This function exists because handler-case can't be used in code that might
-end up being used under with-call/cc, such as code under with-yield"
-  (handler-case
-      (apply #'values t (multiple-value-list (funcall gen)))
-    (stop-iteration ()
-      (values nil nil))))
+  (let ((data (multiple-value-list (funcall gen))))
+    (if (eq 'generator-stop (car data))
+	(values nil nil)
+	(apply #'values t data))))
 
 (defmacro do-generator ((var &rest vars-and-generator) &body body)
   (let ((g (gensym))
@@ -120,15 +117,17 @@ end up being used under with-call/cc, such as code under with-yield"
 
 (defmacro sticky-stop-lambda (params &body body)
   "Once a generator function has signalled a stop-iteration, it should continue to do so every time it is called. This macro helps with obeying that rule." 
-  (let ((state (gensym)))
+  (let ((state (gensym))
+	(exit (gensym)))
     `(let ((,state t))
        (lambda ,params
        (if ,state
-	   (labels ((sticky-stop ()
-		      (setf ,state nil)
-		      (signal 'stop-iteration)))
-	     ,@body)
-	   (signal 'stop-iteration))))))
+	   (block ,exit
+	     (labels ((sticky-stop ()
+			(setf ,state nil)
+			(return-from ,exit 'generator-stop)))
+	       ,@body))
+	   'generator-stop)))))
 
 (defmacro gen-lambda-with-sticky-stop (&rest rest)
   `(make-instance 
@@ -142,26 +141,25 @@ end up being used under with-call/cc, such as code under with-yield"
 		(when sig
 		  (mapcar #'list rest)))))
     (when stor
-      (handler-case
-	  (dotimes (i (1- n))
-	    (loop for val in (multiple-value-list (funcall gen))
+      (dotimes (i (1- n))
+	(let ((vals (multiple-value-list (funcall gen))))
+	  (if (eq 'generator-stop (car vals))
+	      (if fail-if-short
+		  (error 'insufficient-items 
+			 "Insufficient items in generator")
+		  (return (apply #'values (mapcar #'reverse stor))))
+	      (loop for val in vals
 		 for j from 0
-		 do (push val (elt stor j))))
-	(stop-iteration ()
-	  (if fail-if-short
-	      (error 'insufficient-items "Insufficient items in generator")
-	      (apply #'values (mapcar #'reverse stor)))))
+		 do (push val (elt stor j))))))
       (apply #'values (mapcar #'nreverse stor)))))
-  
+
 (defun consume (n gen &key (fail-if-short t))
   "Takes N items from generator gen, returning nothing. If the generator contains less than n items, consume will empty the generator silently if fail-if-short is set to nil, otherwise it will raise an error."
-  (handler-case
       (dotimes (i n)
-	 (funcall gen))
-      (stop-iteration ()
-	(if fail-if-short
-	    (error 'insufficient-items "Insufficient items in generator")
-	    nil)))
+	(if (eq 'generator-stop (funcall gen))
+	    (if fail-if-short
+		(error 'insufficient-items "Insufficient items in generator")
+		(return nil))))
     nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -189,7 +187,7 @@ a completion signal. Will keep emitting the first return value of the source fun
   (let ((data source))
     (gen-lambda ()
       (if (not data)
-	  (signal 'stop-iteration)
+	  'generator-stop
 	  (prog1
 	      (car data)
 	    (setf data (cdr data)))))))
@@ -198,7 +196,7 @@ a completion signal. Will keep emitting the first return value of the source fun
   (let ((data source))
     (gen-lambda ()
       (if (not data)
-	  (signal 'stop-iteration)
+	  'generator-stop
 	  (prog1
 	      data
 	    (setf data (cdr data)))))))
@@ -220,7 +218,7 @@ a completion signal. Will keep emitting the first return value of the source fun
 	(i 0))
     (gen-lambda ()
       (if (> i (1- seqlen))
-	  (signal 'stop-iteration)
+	  'generator-stop
 	  (prog1
 	      (elt seq i)
 	    (incf i))))))
