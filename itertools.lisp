@@ -61,7 +61,10 @@ Note that this tool may consume considerable storage if the source iterable is l
 		  (loop for g in gens
 		       collect (list g :fill-value fillspec))))
 	(apply #'yield (mapcar #'car vars))))))
-				    
+
+(defun enumerate (generator)
+  (izip (icount 0) generator))
+ 
 (defgenerator compress (data selectors)
   "Moves through the data and selectors generators in parallel, only yielding elements of data that are paired with a value from selectors that evaluates to true. Eg:
    (compress (list->generator '(a b c d e f))
