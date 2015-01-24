@@ -1,7 +1,7 @@
 Pygen
 =====
 
-Python style generators for Common Lisp.  It includes yield and a port of itertools.
+Python style generators for Common Lisp.  Includes a port of itertools.
 
 Generators
 ==========
@@ -104,8 +104,13 @@ Yield-all
 
 Yield-all should only be used inside of a defgenerator or with-yield block. It expects a generator, which it consumes and emits through its enclosing generator.
 
+More generator examples can be found in itertools.lisp.
+
 For Python Programmers
 ======================
+
+Examples
+--------
 
 Seeing that pygen was created to make the python emigré (author included) more comfortable in Common Lisp, here are some transitional examples:
 
@@ -123,11 +128,67 @@ Pygen's goal is to recreate the concept of python generators while staying withi
 
 Python:
 
-    (x for x in y for y in iter if pred(x))
+    [x/2 for x in iter]
 
+Pygen:
 
+    (collecting
+      (do-generator (x iter)
+        (collect (/ x 2))))
 
+Don't use generators if you want to immediately build a list. You're better off using either the collect keyword from the loop macro or one of the collectors macros. Collecting, above, comes from the [cl-utilities](http://common-lisp.net/project/cl-utilities/doc/) which also has a nice, simple with-collectors macro. The [arnesi](http://www.common-lisp.net/project/bese/arnesi.html) library has a more powerful with-collectors, plus some interesting alternatives.
 
+Python:
+
+    for i, val in enumerate(iter):
+    	...
+
+Pygen:
+    
+    (do-generator (i val (enumerate iter))
+      ...
+
+Python:
+
+    ([x for x in y] for y in [[1, 2, 3], [5, 4]] if pred(x))
+
+Pygen:
+
+    (with-yield
+      (loop for y in '((1 2 3) (5 4))
+        do (yield 
+             (loop for x in y	
+             	when (funcall pred x)
+ 	       	  collect x))))
+
+Pygen yield works with loop, do, dolist and recursive iteration.
+
+About values
+------------
+
+Common Lisp has a feature called values (see the values function and stuff that starts multiple-value-) that is not found in python. It is the return value analogue of optional parameters. 
+
+For example, the floor function:
+
+    > (floor 2.56)
+    2
+    0.55999994
+
+It returns both the integer value that you would expect, plus the fractional portion of the number as the second value. In normal operation that second value will be discarded. To access it, something like multiple-value-bind, multiple-value-list or nth-value is needed. 
+
+Pygen generators are designed to yield multiple values. If yield is called with multiple parameters, it will by default emit them as separate values. This behavior can be modified with the **pygen-multi-mode** variable. Its default setting is :values. Set it to :list during generator *creation* for more python-like behavior in generators like izip, permutations, and combinations.
+
+    > (generator->list (combinations '(1 2 3) 2))
+    (1 1 2)
+    (2 3 3)
+    > (generator->list (let ((*pygen-multi-mode* :list))
+                         (combinations '(1 2 3) 2)))
+    ((1 2) (1 3) (2 3))
+
+Yield as a function
+-------------------
+
+In pygen, yield is a locally defined function, not a keyword. It can only be called from within a with-yield or defgenerator block. Unlike the python version, it can be called from functions defined with the block, even when those functions are stacked a few layers deep in recursion. For an example see the definition of products, permutations, combinations or combinations-with-replacement in the itertools.lisp file.
 
 Other generator creation issues
 ===============================
@@ -164,6 +225,21 @@ Writing consumers
 -----------------
 
 Because with-yield/yield is based on the Arnesi CPS transformer, any code that is going to be run in a with-yield or defgenerator block must be designed with its limitations in mind. You can't, for example, directly handle signals in such code. See the source of do-generators and next-generator-value for an example.
+
+Adaptors
+========
+How to interface with other Common Lisp iteration and generation tools.
+
+Loop
+----
+Consuming a pygen generator from within loop:
+
+    > (loop with g = (some-numbers)
+	for (sig val) = (multiple-value-list (next-generator-value g))
+	while sig
+	...
+
+
 
 
 Author
