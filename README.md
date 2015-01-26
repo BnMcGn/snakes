@@ -190,6 +190,12 @@ Yield as a function
 
 In pygen, yield is a locally defined function, not a keyword. It can only be called from within a with-yield or defgenerator block. Unlike the python version, it can be called from functions defined with the block, even when those functions are stacked a few layers deep in recursion. For an example see the definition of products, permutations, combinations or combinations-with-replacement in the itertools.lisp file.
 
+Generators are functions
+------------------------
+
+Pygen generators don't have a "next" method. They are directly funcallable; that is to say, they are the "next" method.
+
+
 Other generator creation issues
 ===============================
 
@@ -207,9 +213,9 @@ You can use the gen-lambda macro for the inner lambda. It wraps your lambda in a
 
 Stopping the generator correctly is the other problem.
 
-Like in python, pygen generators raise a signal - stop-iteration - when they terminate. Some lisp generator implementations use the second value to signal termination. Pygen is implemented with a signal stop to free up the value channels for user purposes.
+Unlike python, which raises an exception to signal generator termination, pygen generators emit the generator-stop symbol from the pygen package. The initial implementation of pygen used a signal as a stop marker. Because with-yield/yield is based on the Arnesi CPS transformer, code meant to be run inside of a with-yield or defgenerator block could not handle signals. This necessitated some inefficient work-arounds. The other option - using the values channel to signal cessation - would mean that the values channels would not be free for user purposes.
 
-Once a generator sends stop-iteration, it should continue to do so every time it is called. There is a convenience macro to make this behavior easier to accomplish: gen-lambda-with-sticky-stop
+Once a generator emits pygen:generator-stop, it should continue to do so every time it is called. There is a convenience macro to make this behavior easier to accomplish: gen-lambda-with-sticky-stop
 
     > (defun function->generator (source-func predicate)
       "Returns a generator that repeatedly calls source-func, tests the result against the predicate function, terminates when the predicate tests false, otherwise yielding the result"
@@ -219,12 +225,7 @@ Once a generator sends stop-iteration, it should continue to do so every time it
 	        res
 	        (sticky-stop)))))
 
-When sticky-stop is called it signals a stop-iteration. In subsequent calls to the function, none of the body code will be run. Stop-iteration will be immediately signalled.
-
-Writing consumers
------------------
-
-Because with-yield/yield is based on the Arnesi CPS transformer, any code that is going to be run in a with-yield or defgenerator block must be designed with its limitations in mind. You can't, for example, directly handle signals in such code. See the source of do-generators and next-generator-value for an example.
+When sticky-stop is called it returns the generator-stop symbol. In subsequent calls to the function, none of the body code will be run. Generator-stop will be returned each time.
 
 Adaptors
 ========

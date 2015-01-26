@@ -159,30 +159,27 @@ values of the supplied generators, emitting the result. Eg:
 
 (defun append! (lst obj)
   (setf (cdr (last lst)) obj))
-      
+
 (defun tee (generator &optional (n 2))
   "Creates independent copies of generator, returned as values. If the child generators are consumed at different times, tee will store all of the items from the least consumed child generator through to the most. It can, if used incautiously, require considerable memory. 
 
 Note also that this implementation of tee does not create independent copies of the parent items. Modifying items from a child generator and tampering with the parent generator have undefined consequences."
-  (let ((stor (cons :x nil)) ;First nil is a dummy value
-	(stop-marker (gensym)))
+  (let ((stor (cons :x nil))) ;First nil is a dummy value
     (labels ((get-next ()
-	       (let* ((data (multiple-value-list 
-			    (next-generator-value generator)))
-		      (curr (if (car data)
-				(cons (cdr data) nil)
-				(cons stop-marker nil))))
+	       (let ((curr (if-generator (g generator)
+					 (cons g nil)
+					 (cons (car g) nil))))
 		 (append! stor curr)
 		 (setf stor curr))))
       (with-collectors (gens<)
 	(dotimes (i n)
 	  (gens<
-	   (let ((ldata stor))  
+	   (let ((ldata stor))
 	     (gen-lambda-with-sticky-stop ()
 	       (unless (cdr ldata)
 		 (get-next))
 	       (setf ldata (cdr ldata))
-	       (if (eq (car ldata) stop-marker)
+	       (if (eq (car ldata) 'generator-stop)
 		   (sticky-stop)
 		   (apply #'values (ensure-list (car ldata))))))))
 	(apply #'values (gens<))))))

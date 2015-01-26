@@ -66,36 +66,37 @@
      (with-yield
        ,@body)))
 
-
-(defun next-generator-value (gen)
-  (let ((data (multiple-value-list (funcall gen))))
-    (if (eq 'generator-stop (car data))
-	(values nil nil)
-	(apply #'values t data))))
+(defmacro if-generator ((var gen) true-clause &optional false-clause)
+  "Pulls a single iteration out of gen. If a single var is specified, it places all the values from the iteration in a list under var. If var is a list, destructures values into the vars in the list. If the generator has stopped, evaluates false-clause, otherwise evaluates true-clause."
+  `(,@(if (listp var)
+	 `(multiple-value-bind ,var
+	      (funcall ,gen))
+	 `(let ((,var (multiple-value-list (funcall ,gen))))))
+      (if (eq 'generator-stop
+	      ,(if (listp var)
+		   (car var)
+		   `(car ,var)))
+	  ,false-clause
+	  ,true-clause)))
 
 (defmacro do-generator ((var &rest vars-and-generator) &body body)
-  (let ((g (gensym))
-	(sig (gensym)))
+  "Steps through the specified generator, binding the value it returns to var, then executing the body for each step. If multiple variables are specified and the generator returns multiple values, the extra values will be bound to the extra variables."
+  (let ((g (gensym)))
     `(let ((,g ,(car (last vars-and-generator))))
        (loop 
-	  do (multiple-value-bind 
-		   (,sig ,var ,@(butlast vars-and-generator)) 
-		 (next-generator-value ,g)
-	       (unless ,sig
-		 (return))
-	       ,@body)))))
+	  do (if-generator ((,var ,@(butlast vars-and-generator)) ,g)
+			   (progn
+			     ,@body)
+			   (return))))))
 
 (defmacro do-generator-value-list ((var generator) &body body)
   "Like do-generator, except all values emitted by the generator are placed in a list under the user defined variable."
-  (let ((g (gensym))
-	(sig (gensym)))
+  (let ((g (gensym)))
     `(let ((,g ,generator))
        (loop 
-	  do (multiple-value-destructure (,sig . ,var)
-		 (next-generator-value ,g)
-	       (unless ,sig
-		 (return))
-	       ,@body)))))
+	  do (if-generator (,var ,g)
+			   (progn ,@body)
+			   (return))))))
 
 (defun mapc-generator (function generator)
   (do-generator (item generator)
@@ -116,7 +117,7 @@
 
 
 (defmacro sticky-stop-lambda (params &body body)
-  "Once a generator function has signalled a stop-iteration, it should continue to do so every time it is called. This macro helps with obeying that rule." 
+  "Once a generator function has sent a generator-stop symbol, it should continue to do so every time it is called. This macro helps with obeying that rule." 
   (let ((state (gensym))
 	(exit (gensym)))
     `(let ((,state t))
@@ -136,29 +137,28 @@
 
 (defun take (n gen &key (fail-if-short t))
   "Takes n items from generator gen, returning them as a list. If the generator  contains less than n items, take will return what is available if fail-if-short is set to nil, otherwise it will raise an error."
-  (let ((stor (multiple-value-destructure (sig . rest) 
-		  (next-generator-value gen)
-		(when sig
-		  (mapcar #'list rest)))))
+  (let ((stor (if-generator (tmp gen) (mapcar #'list tmp))))
     (when stor
       (dotimes (i (1- n))
-	(let ((vals (multiple-value-list (funcall gen))))
-	  (if (eq 'generator-stop (car vals))
-	      (if fail-if-short
-		  (error 'insufficient-items 
-			 "Insufficient items in generator")
-		  (return (apply #'values (mapcar #'reverse stor))))
-	      (loop for val in vals
-		 for j from 0
-		 do (push val (elt stor j))))))
+	(if-generator 
+	 (vals gen)
+	 (loop for val in vals
+	    for j from 0
+	    do (push val (elt stor j)))
+	 (if fail-if-short
+	     (error 'insufficient-items 
+		    "Insufficient items in generator")
+	     (return (apply #'values (mapcar #'reverse stor))))))
       (apply #'values (mapcar #'nreverse stor)))))
 
 (defun consume (n gen &key (fail-if-short t))
   "Takes N items from generator gen, returning nothing. If the generator contains less than n items, consume will empty the generator silently if fail-if-short is set to nil, otherwise it will raise an error."
       (dotimes (i n)
-	(if (eq 'generator-stop (funcall gen))
-	    (if fail-if-short
-		(error 'insufficient-items "Insufficient items in generator")
+	(if-generator (x gen)
+		      nil
+		      (if fail-if-short
+			  (error 'insufficient-items 
+				 "Insufficient items in generator")
 		(return nil))))
     nil)
 
@@ -202,10 +202,8 @@ a completion signal. Will keep emitting the first return value of the source fun
 	    (setf data (cdr data)))))))
 
 (defun generator->list (gen)
-  (let ((stor (multiple-value-destructure (sig . rest) 
-		  (next-generator-value gen)
-		(when sig
-		  (mapcar #'list rest)))))
+  (let ((stor (if-generator (tmp gen)
+		    (mapcar #'list tmp))))
     (do-generator-value-list (g gen)
       (setf stor
 	    (loop for pile in stor

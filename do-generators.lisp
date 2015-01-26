@@ -1,6 +1,11 @@
 
 (in-package :pygen)
 
+(defun next-generator-value (gen)
+  (let ((data (multiple-value-list (funcall gen))))
+    (if (eq 'generator-stop (car data))
+	(values nil nil)
+	(apply #'values t data))))
 
 (defun next-generator-value-filled (fill)
   "Returns a closure that acts like next-generator-value, but returns fill when the generator runs out. The :filled keyword instead of T in the first value 

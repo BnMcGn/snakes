@@ -3,7 +3,7 @@
 (defpackage #:pygen
   (:use #:cl #:arnesi)
   (:export
-   #:stop-iteration
+   #:generator-stop
    #:with-yield
    #:yield
    #:defgenerator
@@ -30,7 +30,6 @@
    #:gen-lambda
    #:gen-lambda-with-sticky-stop
    #:sticky-stop
-   #:next-generator-value
    ;Itertools
    #:icount
    #:cycle
