@@ -35,6 +35,7 @@
    #:cycle
    #:repeat
    #:chain
+   #:enumerate
    #:izip
    #:izip-longest
    #:compress
@@ -54,3 +55,4 @@
 
 (defpackage #:pygen-test
   (:use #:cl #:pygen #:fiveam))
+

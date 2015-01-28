@@ -235,13 +235,44 @@ Loop
 ----
 Consuming a pygen generator from within loop:
 
+
     > (loop with g = (some-numbers)
-	for (sig val) = (multiple-value-list (next-generator-value g))
-	while sig
-	...
+    	for val = (funcall g)
+	until (eq 'generator-stop val)
+	...	
+ 
+Iterate
+-------
+Iterate can step over generators in the same way as loop. There is also an extension for consuming pygen generators in iterate.
+
+      > (ql:quickload 'pygen-iterate)
+      > (use-package 'pygen-iterate)
+      > (iter (for x in-generator (some-numbers))
+              (print x))
+      (1)
+      (2)
+      SOME-MESSAGE
+      (3)
+      (8)
+      (9)
+
+      > (iter (for (x) in-generator (some-numbers))
+              (print x))
+      1
+      2
+      SOME-MESSAGE
+      3
+      8
+      9
+
+The in-generator extension will bind the values list from the generator to the variable by default. Wrapping one or more variables in a list, as in the second example above, causes the individual values to be destructured into the variables. Eg:
+
+    > (iter (for (i x) in-generator (enumerate (list->generator '(3 2 1))))
+        (summing (* i x)))
+    4
 
 
-
+         
 
 Author
 ======
