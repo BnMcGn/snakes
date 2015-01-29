@@ -1,4 +1,4 @@
-Pygen
+Snakes
 =====
 
 Python style generators for Common Lisp.  Includes a port of itertools.
@@ -26,12 +26,12 @@ While generators are not the most computationally efficient way to solve most pr
 Homepage
 ========
 
-Pygen can be found here: [https://github.com/BnMcGn/pygen](https://github.com/BnMcGn/pygen)
+Snakes can be found here: [https://github.com/BnMcGn/snakes](https://github.com/BnMcGn/snakes)
 
 Installation
 ============
 
-Copy the files to your-local-quicklisp-project-dir/pygen and load with `(ql:quickload 'pygen)`.
+Copy the files to your-local-quicklisp-project-dir/snakes and load with `(ql:quickload 'snakes)`.
 
 Examples
 ========
@@ -124,25 +124,25 @@ For Python Programmers
 Examples
 --------
 
-Seeing that pygen was created to make the python emigré (author included) more comfortable in Common Lisp, here are some transitional examples:
+Seeing that snakes was created to make the python emigré (author included) more comfortable in Common Lisp, here are some transitional examples:
 
 Python: 
 
     (x/2 for x in iter)
 
-Pygen:
+Snakes:
     
     (with-yield
       (do-generator (x iter)
         (yield (/ x 2))))
 
-Pygen's goal is to recreate the concept of python generators while staying within the bounds of lisp idiom convention. Its goal is not to look like python, so it doesn't implement for... in style syntax. Not to say it can't be done: see [ergolib](https://github.com/rongarret/ergolib).
+Snakes's goal is to recreate the concept of python generators while staying within the bounds of lisp idiom convention. Its goal is not to look like python, so it doesn't implement for... in style syntax. Not to say it can't be done: see [ergolib](https://github.com/rongarret/ergolib).
 
 Python:
 
     [x/2 for x in iter]
 
-Pygen:
+Snakes:
 
     (collecting
       (do-generator (x iter)
@@ -155,7 +155,7 @@ Python:
     for i, val in enumerate(iter):
     	...
 
-Pygen:
+Snakes:
     
     (do-generator (i val (enumerate iter))
       ...
@@ -164,7 +164,7 @@ Python:
 
     ([x for x in y] for y in [[1, 2, 3], [5, 4]] if pred(x))
 
-Pygen:
+Snakes:
 
     (with-yield
       (loop for y in '((1 2 3) (5 4))
@@ -173,7 +173,7 @@ Pygen:
              	when (funcall pred x)
  	       	  collect x))))
 
-Pygen yield works with loop, do, dolist and recursive iteration.
+Snakes yield works with loop, do, dolist and recursive iteration.
 
 About values
 ------------
@@ -188,24 +188,24 @@ For example, the floor function:
 
 It returns both the integer value that you would expect, plus the fractional portion of the number as the second value. In normal operation that second value will be discarded. To access it, something like multiple-value-bind, multiple-value-list or nth-value is needed. 
 
-Pygen generators are multiple-values capable. If yield is called with multiple parameters, it will by default emit them as separate values. This behavior can be modified with the `*pygen-multi-mode*` variable. Its default setting is :values. Set it to :list during generator *creation* for more python-like behavior in generators like izip, permutations, and combinations.
+Snakes generators are multiple-values capable. If yield is called with multiple parameters, it will by default emit them as separate values. This behavior can be modified with the `*snakes-multi-mode*` variable. Its default setting is :values. Set it to :list during generator *creation* for more python-like behavior in generators like izip, permutations, and combinations.
 
     > (generator->list (combinations '(1 2 3) 2))
     (1 1 2)
     (2 3 3)
-    > (generator->list (let ((*pygen-multi-mode* :list))
+    > (generator->list (let ((*snakes-multi-mode* :list))
                          (combinations '(1 2 3) 2)))
     ((1 2) (1 3) (2 3))
 
 Yield as a function
 -------------------
 
-In pygen, yield is a locally defined function, not a keyword. It can only be called from within a with-yield or defgenerator block. Unlike the python version, it can be called from functions defined with the block, even when those functions are stacked a few layers deep in recursion. For an example see the definition of products, permutations, combinations or combinations-with-replacement in the itertools.lisp file.
+In snakes, yield is a locally defined function, not a keyword. It can only be called from within a with-yield or defgenerator block. Unlike the python version, it can be called from functions defined with the block, even when those functions are stacked a few layers deep in recursion. For an example see the definition of products, permutations, combinations or combinations-with-replacement in the itertools.lisp file.
 
 Generators are functions
 ------------------------
 
-Pygen generators don't have a "next" method. They are directly funcallable; that is to say, they are the "next" method.
+Snakes generators don't have a "next" method. They are directly funcallable; that is to say, they are the "next" method.
 
 
 Other generator creation issues
@@ -225,9 +225,9 @@ You can use the gen-lambda macro for the inner lambda. It wraps your lambda in a
 
 Stopping the generator correctly is the other problem.
 
-Unlike python, which raises an exception to signal generator termination, pygen generators emit the generator-stop symbol from the pygen package. The initial implementation of pygen used a signal as a stop marker. Because with-yield/yield is based on the Arnesi CPS transformer, code meant to be run inside of a with-yield or defgenerator block could not handle signals. This necessitated some inefficient work-arounds. The other option - using the values channel to signal cessation - would mean that the values channels would not be free for user purposes.
+Unlike python, which raises an exception to signal generator termination, snakes generators emit the generator-stop symbol from the snakes package. The initial implementation of snakes used a signal as a stop marker. Because with-yield/yield is based on the Arnesi CPS transformer, code meant to be run inside of a with-yield or defgenerator block could not handle signals. This necessitated some inefficient work-arounds. The other option - using the values channel to signal cessation - would mean that the values channels would not be free for user purposes.
 
-Once a generator emits pygen:generator-stop, it should continue to do so every time it is called. There is a convenience macro to make this behavior easier to accomplish: gen-lambda-with-sticky-stop
+Once a generator emits snakes:generator-stop, it should continue to do so every time it is called. There is a convenience macro to make this behavior easier to accomplish: gen-lambda-with-sticky-stop
 
     > (defun function->generator (source-func predicate)
       "Returns a generator that repeatedly calls source-func, tests the result against the predicate function, terminates when the predicate tests false, otherwise yielding the result"
@@ -245,7 +245,7 @@ How to interface with other Common Lisp iteration and generation tools.
 
 Loop
 ----
-Consuming a pygen generator from within loop:
+Consuming a snakes generator from within loop:
 
 
     > (loop with g = (some-numbers)
@@ -255,10 +255,10 @@ Consuming a pygen generator from within loop:
  
 Iterate
 -------
-Iterate can step over generators in the same way as loop. There is also an extension for consuming pygen generators in iterate.
+Iterate can step over generators in the same way as loop. There is also an extension for consuming snakes generators in iterate.
 
-      > (ql:quickload 'pygen-iterate)
-      > (use-package 'pygen-iterate)
+      > (ql:quickload 'snakes-iterate)
+      > (use-package 'snakes-iterate)
       > (iter (for x in-generator (some-numbers))
               (print x))
       (1)

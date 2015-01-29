@@ -1,21 +1,21 @@
-;;;; pygen.asd
+;;;; snakes.asd
 
-(asdf:defsystem #:pygen
+(asdf:defsystem #:snakes
   :serial t
-  :description "Describe pygen here"
+  :description "Describe snakes here"
   :author "Ben McGunigle <bnmcgn@gmail.com>"
   :license "Apache 2.0"
   :depends-on (#:arnesi #:closer-mop #:fiveam)
   :components ((:file "package")
 	       (:file "util")
-               (:file "pygen" :depends-on ("util"))
+               (:file "snakes" :depends-on ("util"))
                (:file "do-generators")
                (:file "itertools")))
 
-(asdf:defsystem #:pygen-iterate
+(asdf:defsystem #:snakes-iterate
   :serial t
-  :description "Driver for pygen generator consumption in iterate macro."
-  :depends-on (#:pygen #:iterate)
+  :description "Driver for snakes generator consumption in iterate macro."
+  :depends-on (#:snakes #:iterate)
   :components ((:file "iterate")))
 
 

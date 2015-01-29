@@ -1,5 +1,5 @@
 
-(in-package :pygen)
+(in-package :snakes)
 
 (defun next-generator-value (gen)
   (let ((data (multiple-value-list (funcall gen))))

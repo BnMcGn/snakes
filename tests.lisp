@@ -1,11 +1,11 @@
 ;;;; -*- lisp -*-
 
-(in-package :pygen-test)
+(in-package :snakes-test)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (def-suite pygen-test))
+  (def-suite snakes-test))
 
-(in-suite pygen-test)
+(in-suite snakes-test)
 
 (defvar data '(1 2 3 4 5))
 
@@ -204,7 +204,7 @@
 (test permutations
   (is (equal '((1 2))
 	     (take 1
-		   (let ((*pygen-multi-mode* :list))
+		   (let ((*snakes-multi-mode* :list))
 		     (permutations data 2))))))
 
 (test combinations-with-replacement

@@ -1,6 +1,6 @@
 ;;;; util.lisp
 
-(in-package #:pygen)
+(in-package #:snakes)
 
 (defmacro def-as-func (var func-form)
   `(setf (symbol-function ',var) ,func-form))

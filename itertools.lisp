@@ -1,5 +1,5 @@
 
-(in-package :pygen)
+(in-package :snakes)
 
 (defgenerator icount (n &optional (step 1))
   "Make a generator that returns evenly spaced values starting with n. Step can be fractional. Eg:

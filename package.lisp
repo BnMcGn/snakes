@@ -1,6 +1,6 @@
 ;;;; package.lisp
 
-(defpackage #:pygen
+(defpackage #:snakes
   (:use #:cl #:arnesi)
   (:export
    #:generator-stop
@@ -18,7 +18,7 @@
    #:consume
    #:do-generators
    #:multi-gen
-   #:*pygen-multi-mode*
+   #:*snakes-multi-mode*
    ;Adaptors
    #:function->generator
    #:value-func->generator
@@ -53,6 +53,6 @@
    #:combinations
    #:combinations-with-replacement))
 
-(defpackage #:pygen-test
-  (:use #:cl #:pygen #:fiveam))
+(defpackage #:snakes-test
+  (:use #:cl #:snakes #:fiveam))
 

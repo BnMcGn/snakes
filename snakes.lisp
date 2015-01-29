@@ -1,16 +1,16 @@
-;;;; pygen.lisp
+;;;; snakes.lisp
 
-(in-package #:pygen)
+(in-package #:snakes)
 
-;;; "pygen" goes here. Hacks and glory await!
+;;; "snakes" goes here. Hacks and glory await!
 
 
-(define-condition pygen-error (error) ())
+(define-condition snakes-error (error) ())
 
-(define-condition insufficient-items (pygen-error) ()
+(define-condition insufficient-items (snakes-error) ()
   (:documentation "Generator has run out of items before expected."))
 
-(defparameter *pygen-multi-mode* :values)
+(defparameter *snakes-multi-mode* :values)
 
 (defclass basic-generator ()
      ()
@@ -34,12 +34,12 @@
       :function (lambda ,params ,@rest))))
 
 (defun create-values-handler ()
-  "Returns a function to transform ready-to-be-yielded values according to *pygen-multi-mode*. This should be set up at generator creation time, not at consumption time, so that generators in a chain can be set individually."
-  (case *pygen-multi-mode*
+  "Returns a function to transform ready-to-be-yielded values according to *snakes-multi-mode*. This should be set up at generator creation time, not at consumption time, so that generators in a chain can be set individually."
+  (case *snakes-multi-mode*
     (:values #'identity)
     (:list #'list)
     (otherwise
-     (error "*pygen-multi-mode* setting not supported"))))
+     (error "*snakes-multi-mode* setting not supported"))))
 
 (defmacro with-yield (&body body)
   (let ((point (gensym))
