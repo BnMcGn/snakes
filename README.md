@@ -136,7 +136,7 @@ Snakes:
       (do-generator (x iter)
         (yield (/ x 2))))
 
-Snakes's goal is to recreate the concept of python generators while staying within the bounds of lisp idiom convention. Its goal is not to look like python, so it doesn't implement for... in style syntax. Not to say it can't be done: see [ergolib](https://github.com/rongarret/ergolib).
+Snakes' goal is to recreate the concept of python generators while staying within the bounds of lisp idiom convention. Its goal is not to look like python, so it doesn't implement for... in style syntax. Not to say it can't be done: see [ergolib](https://github.com/rongarret/ergolib).
 
 Python:
 
