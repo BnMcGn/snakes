@@ -23,6 +23,16 @@ Perhaps their most useful feature is an ability to be chained together, analogou
 
 While generators are not the most computationally efficient way to solve most problems, they're elegant in use and great for rapid prototyping.
 
+Homepage
+========
+
+Pygen can be found here: [https://github.com/BnMcGn/pygen](https://github.com/BnMcGn/pygen)
+
+Installation
+============
+
+Copy the files to your-local-quicklisp-project-dir/pygen and load with `(ql:quickload 'pygen)`.
+
 Examples
 ========
 
@@ -33,6 +43,8 @@ Creating
         (print 'some-message)
         (loop for i from 8 upto 9 do (yield i)))
 
+When the generator is first called, it commences execution at the beginning of its body. When a yield call is reached, the generator returns the yielded value, surrendering execution to the calling code. The next time the generator is called, it continues execution just past the yield where it last stopped. If or when execution reaches the end of the block, the generator terminates.
+ 
 Note: defgenerator doesn't create a generator. It defines a function that returns a new generator each time it is called. 
 
 Consuming
@@ -67,8 +79,8 @@ More consumption options
     (1 2 4)
 
     > (do-generator (item (some-numbers))
-                     (when (< 3 item)
-                       (return item)))
+                      (when (< 3 item)
+                        (return item)))
     SOME-MESSAGE 
     8
 
@@ -104,7 +116,7 @@ Yield-all
 
 Yield-all should only be used inside of a defgenerator or with-yield block. It expects a generator, which it consumes and emits through its enclosing generator.
 
-More generator examples can be found in itertools.lisp.
+More generator examples can be found in itertools.lisp. Documentation for the original python itertools is [here](https://docs.python.org/2/library/itertools.html)
 
 For Python Programmers
 ======================
@@ -124,7 +136,7 @@ Pygen:
       (do-generator (x iter)
         (yield (/ x 2))))
 
-Pygen's goal is to recreate the concept of python generators while staying within the bounds of lisp idiom convention. Its goal is not to look like python. So it doesn't implement for... in style syntax. Not to say it can't be done: see [ergolib](https://github.com/rongarret/ergolib).
+Pygen's goal is to recreate the concept of python generators while staying within the bounds of lisp idiom convention. Its goal is not to look like python, so it doesn't implement for... in style syntax. Not to say it can't be done: see [ergolib](https://github.com/rongarret/ergolib).
 
 Python:
 
@@ -176,7 +188,7 @@ For example, the floor function:
 
 It returns both the integer value that you would expect, plus the fractional portion of the number as the second value. In normal operation that second value will be discarded. To access it, something like multiple-value-bind, multiple-value-list or nth-value is needed. 
 
-Pygen generators are designed to yield multiple values. If yield is called with multiple parameters, it will by default emit them as separate values. This behavior can be modified with the **pygen-multi-mode** variable. Its default setting is :values. Set it to :list during generator *creation* for more python-like behavior in generators like izip, permutations, and combinations.
+Pygen generators are multiple-values capable. If yield is called with multiple parameters, it will by default emit them as separate values. This behavior can be modified with the `*pygen-multi-mode*` variable. Its default setting is :values. Set it to :list during generator *creation* for more python-like behavior in generators like izip, permutations, and combinations.
 
     > (generator->list (combinations '(1 2 3) 2))
     (1 1 2)
@@ -270,9 +282,6 @@ The in-generator extension will bind the values list from the generator to the v
     > (iter (for (i x) in-generator (enumerate (list->generator '(3 2 1))))
         (summing (* i x)))
     4
-
-
-         
 
 Author
 ======

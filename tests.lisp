@@ -94,6 +94,12 @@
 				    (:list l data :fill-value 0))
 		      (yield (+ l g)))))))))
 
+(test consume
+  (is (= 3
+	 (let ((gen (some-numbers)))
+	   (consume 2 gen)
+	   (funcall gen)))))
+
 (test icount
   (is (equal '(10 12 14 16)
 	     (take 4
