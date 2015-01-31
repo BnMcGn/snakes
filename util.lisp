@@ -25,20 +25,3 @@
 (defun last-car (list)
   (car (last list)))
 
-(defmacro do-file-by-line ((line stream-or-path) &body body)
-  (let ((stream (gensym))
-	(eof (gensym)))
-  `(cond 
-     ((pathnamep ,stream-or-path)
-      (with-open-file (,stream ,stream-or-path)
-	(loop 
-	   for ,line = (read-line ,stream nil ',eof)
-	   until (eq ,line ',eof)
-	   do (progn ,@body))))
-     ((streamp ,stream-or-path)
-      (loop
-	   for ,line = (read-line ,stream-or-path nil ',eof)
-	   until (eq ,line ',eof)
-	   do (progn ,@body)))
-     (t (error "Not a stream or path!")))))
-

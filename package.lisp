@@ -26,6 +26,7 @@
    #:list->generator-with-tail
    #:generator->list
    #:sequence->generator
+   #:file->generator
    ;Construction tools
    #:gen-lambda
    #:gen-lambda-with-sticky-stop

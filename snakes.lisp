@@ -220,6 +220,26 @@ a completion signal. Will keep emitting the first return value of the source fun
 	  (prog1
 	      (elt seq i)
 	    (incf i))))))
+
+(defun stream->generator (stream)
+  "Emits stream line at a time as a generator."
+  (with-yield
+    (loop
+       for line = (read-line stream nil 'eof)
+       until (eq line 'eof)
+       do (yield line))))
+
+(defun file->generator (path)
+  "Given a path, will attempt to open the file specified and emit it line by line. Note: it will not close the file until the generator is exhausted."
+  (let ((file (open path)))
+    (with-yield
+      (loop
+	 for line = (read-line file nil 'eof)
+	   until (eq line 'eof)
+	   do (yield line))
+      (close file))))
+    
+
 ;;;Ideas:
 
 ;adaptors for SERIES, others?
