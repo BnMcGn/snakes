@@ -3,7 +3,7 @@
 (defpackage #:snakes
   (:use #:cl #:cl-cont)
   (:import-from #:alexandria #:ensure-list)
-  (:shadowing-import-from #:arnesi #:with-collectors)
+  (:shadowing-import-from #:cl-utilities #:with-collectors)
   (:export
    #:generator-stop
    #:with-yield

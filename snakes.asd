@@ -5,7 +5,7 @@
   :description "Describe snakes here"
   :author "Ben McGunigle <bnmcgn@gmail.com>"
   :license "Apache 2.0"
-  :depends-on (#:cl-cont #:closer-mop #:fiveam #:iterate)
+  :depends-on (#:cl-cont #:closer-mop #:fiveam #:iterate #:cl-utilities)
   :components ((:file "package")
 	       (:file "util")
                (:file "snakes" :depends-on ("util"))

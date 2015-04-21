@@ -72,7 +72,7 @@ slot still evaluates as true, but indicates that the generator has ended."
       spec))
 
 (defun process-genspecs (genspecs)
-  (with-collectors ((varnames<) (short-specs<))
+  (with-collectors (varnames< short-specs<)
     (dolist (genspec genspecs)
       (multiple-value-bind (fill spec)
 	  (extract-keywords '(:fill-value) genspec)
@@ -84,8 +84,7 @@ slot still evaluates as true, but indicates that the generator has ended."
 	      (last-car spec)
 	      :fill-value
 	      (cdr (assoc :fill-value fill)))
-	     (last-car spec)))))
-    (values (varnames<) (short-specs<))))
+	     (last-car spec)))))))
 
 (defun bind-clause (datavar varnames body)
   `(let
@@ -95,8 +94,7 @@ slot still evaluates as true, but indicates that the generator has ended."
 	     do (loop for vn in vnames
 		   for j from 0
 		     do
-		       (col< `(,vn (elt (elt ,datavar ,i) ,j)))))
-	  (col<))
+		       (col< `(,vn (elt (elt ,datavar ,i) ,j))))))
      ,@body))
 	    
   

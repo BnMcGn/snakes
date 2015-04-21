@@ -2,7 +2,7 @@
 
 (defpackage #:snakes-test
   (:shadowing-import-from #:snakes #:repeat)
-  (:use #:cl #:snakes #:fiveam #:iterate #:snakes #:snakes-iterate)
+  (:use #:cl #:snakes #:fiveam #:iterate #:snakes #:snakes-iterate))
   
 
 (in-package :snakes-test)

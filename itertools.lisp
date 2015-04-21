@@ -171,18 +171,18 @@ Note also that this implementation of tee does not create independent copies of 
 					 (cons (car g) nil))))
 		 (append! stor curr)
 		 (setf stor curr))))
-      (with-collectors (gens<)
-	(dotimes (i n)
-	  (gens<
-	   (let ((ldata stor))
-	     (gen-lambda-with-sticky-stop ()
-	       (unless (cdr ldata)
-		 (get-next))
-	       (setf ldata (cdr ldata))
-	       (if (eq (car ldata) 'generator-stop)
-		   (sticky-stop)
-		   (apply #'values (ensure-list (car ldata))))))))
-	(apply #'values (gens<))))))
+      (apply #'values 
+	(with-collectors (gens<)
+	  (dotimes (i n)
+	    (gens<
+	     (let ((ldata stor))
+	       (gen-lambda-with-sticky-stop ()
+		 (unless (cdr ldata)
+		   (get-next))
+		 (setf ldata (cdr ldata))
+		 (if (eq (car ldata) 'generator-stop)
+		     (sticky-stop)
+		     (apply #'values (ensure-list (car ldata)))))))))))))
 
 (defgenerator product (&rest lists)
 "Iterates through each of the supplied lists with nested dolists, yielding an element from each for every iteration of the innermost loop. The yielded values cycle in an odometer-like fashion, with the first value changing seldom and the last changing on every yield. Eg:
