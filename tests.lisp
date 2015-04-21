@@ -1,5 +1,10 @@
 ;;;; -*- lisp -*-
 
+(defpackage #:snakes-test
+  (:shadowing-import-from #:snakes #:repeat)
+  (:use #:cl #:snakes #:fiveam #:iterate #:snakes #:snakes-iterate)
+  
+
 (in-package :snakes-test)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -111,7 +116,7 @@
 	       (take 30 
 		(cycle '(4 5 6 7)))))))
 
-(test repeat 
+(test repeat
   (is (= 20
 	 (reduce #'+
 		 (generator->list

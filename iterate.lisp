@@ -4,6 +4,8 @@
   (:export
    #:in-generator))
 
+(in-package :snakes-iterate)
+
 (defmacro-driver (FOR var IN-GENERATOR gen)
   "Iterate through a snakes generator"
   (let ((g (gensym))

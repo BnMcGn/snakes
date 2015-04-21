@@ -57,7 +57,7 @@
 		'generator-stop)
 	       (t
 		(let ((current ,current))
-		  (kall ,point nil)
+		  (funcall ,point nil)
 		  ;values-handler: see gen-lambda
 		  (apply #'values (funcall values-handler current)))))))))
 

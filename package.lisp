@@ -1,7 +1,9 @@
 ;;;; package.lisp
 
 (defpackage #:snakes
-  (:use #:cl #:arnesi)
+  (:use #:cl #:cl-cont)
+  (:import-from #:alexandria #:ensure-list)
+  (:shadowing-import-from #:arnesi #:with-collectors)
   (:export
    #:generator-stop
    #:with-yield
@@ -53,7 +55,3 @@
    #:permutations
    #:combinations
    #:combinations-with-replacement))
-
-(defpackage #:snakes-test
-  (:use #:cl #:snakes #:fiveam))
-
