@@ -219,3 +219,18 @@
 			      (generator->list
 			       (combinations
 				'(2 3 4) 2)))))))
+
+(test iterate
+  (is (equal data (generator->list 
+		   (with-yield 
+		     (iterate:iterate (for i in data)
+		        (yield i))))))
+  (is (= 33 (iterate (for (x) in-generator (some-numbers))
+		  (summing x))))
+  (is (= 39 
+	 (reduce #'+
+	   (generator->list
+	    (with-yield
+	      (iterate (for (x) in-generator (some-numbers))
+		       (yield (1+ x)))))))))
+
