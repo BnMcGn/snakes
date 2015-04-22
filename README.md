@@ -33,6 +33,8 @@ Installation
 
 Copy the files to your-local-quicklisp-project-dir/snakes and load with `(ql:quickload 'snakes)`.
 
+Snakes has been tested on sbcl 1.0.55, clisp 2.49, and clozure 1.10-r16196 under linux.
+
 Examples
 ========
 
@@ -225,7 +227,7 @@ You can use the gen-lambda macro for the inner lambda. It wraps your lambda in a
 
 Stopping the generator correctly is the other problem.
 
-Unlike python, which raises an exception to signal generator termination, snakes generators emit the generator-stop symbol from the snakes package. The initial implementation of snakes used a signal as a stop marker. Because with-yield/yield is based on the Arnesi CPS transformer, code meant to be run inside of a with-yield or defgenerator block could not handle signals. This necessitated some inefficient work-arounds. The other option - using the values channel to signal cessation - would mean that the values channels would not be free for user purposes.
+Unlike python, which raises an exception to signal generator termination, snakes generators emit the generator-stop symbol from the snakes package. The initial implementation of snakes used a signal as a stop marker. Because with-yield/yield is based on cl-cont, code meant to be run inside of a with-yield or defgenerator block could not handle signals. This necessitated some inefficient work-arounds. The other option - using the values channel to signal cessation - would mean that the values channels would not be free for user purposes.
 
 Once a generator emits snakes:generator-stop, it should continue to do so every time it is called. There is a convenience macro to make this behavior easier to accomplish: gen-lambda-with-sticky-stop
 
