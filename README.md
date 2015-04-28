@@ -259,8 +259,6 @@ Iterate
 -------
 Iterate can step over generators in the same way as loop. There is also an extension for consuming snakes generators in iterate.
 
-      > (ql:quickload 'snakes-iterate)
-      > (use-package 'snakes-iterate)
       > (iter (for x in-generator (some-numbers))
               (print x))
       (1)
