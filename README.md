@@ -175,7 +175,7 @@ Snakes:
              	when (funcall pred x)
  	       	  collect x))))
 
-Snakes yield works with loop, do, dolist and recursive iteration.
+Snakes yield works with loop, do, dolist, iterate and recursive iteration.
 
 About values
 ------------

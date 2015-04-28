@@ -1,7 +1,9 @@
 ;;;; package.lisp
 
 (defpackage #:snakes
-  (:use #:cl #:cl-cont)
+  (:use #:cl #:cl-cont #:iterate)
+  (:import-from #:iterate #:defmacro-driver #:generate #:for
+		#:with #:next)
   (:import-from #:alexandria #:ensure-list)
   (:shadowing-import-from #:cl-utilities #:with-collectors)
   (:export
@@ -54,4 +56,5 @@
    #:product
    #:permutations
    #:combinations
-   #:combinations-with-replacement))
+   #:combinations-with-replacement
+   #:in-generator))
