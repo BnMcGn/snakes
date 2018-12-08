@@ -62,9 +62,13 @@
 		  (apply #'values (funcall values-handler current)))))))))
 
 (defmacro defgenerator (name arguments &body body)
-  `(defun ,name ,arguments
-     (with-yield
-       ,@body)))
+  (multiple-value-bind (remaining-forms declarations doc-string)
+      (alexandria:parse-body body :documentation t)
+    `(defun ,name ,arguments
+       ,doc-string
+       ,@declarations
+       (with-yield
+	 ,@remaining-forms))))
 
 (defmacro if-generator ((var gen) true-clause &optional false-clause)
   "Pulls a single iteration out of gen. If a single var is specified, it places all the values from the iteration in a list under var. If var is a list, destructures values into the vars in the list. If the generator has stopped, evaluates false-clause, otherwise evaluates true-clause."
