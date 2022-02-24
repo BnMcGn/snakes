@@ -220,11 +220,10 @@ Note also that this implementation of tee does not create independent copies of 
     (labels ((proc (data output r)
 	       (if (= 0 r)
 		 (apply #'yield (reverse output))
-		 (loop for i from 0 to r
-		    for d on data
-		    do (proc (cdr d)
-			     (cons (car d) output)
-			     (1- r))))))
+		 (loop for d on data do
+		    (proc (cdr d)
+			  (cons (car d) output)
+			  (1- r))))))
       (proc list nil r))))
 
 (defgenerator combinations-with-replacement (list r)
