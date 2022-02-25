@@ -215,29 +215,28 @@ Note also that this implementation of tee does not create independent copies of 
 (defgenerator combinations (list r)
   "Emits every possible combination of the items in list in sets of size r. Eg:
    (combinations '(a b c d) 2) -(values)-> (a b) (a c) (a d) (b c) (b d) (c d)"
-  (if (< (length list) r)
-    (lambda () 'generator-stop)
-    (labels ((proc (data output r)
-	       (if (= 0 r)
+  (labels ((proc (data output r)
+	     (if (zerop r)
 		 (apply #'yield (reverse output))
-		 (loop for i from 0 to r
-		    for d on data
-		    do (proc (cdr d)
-			     (cons (car d) output)
-			     (1- r))))))
-      (proc list nil r))))
+		 (loop for d on data do
+		      (proc (cdr d)
+			    (cons (car d) output)
+			    (1- r))))))
+    (if (< (length list) r)
+        (lambda () 'generator-stop)
+        (proc list nil r))))
 
 (defgenerator combinations-with-replacement (list r)
   "Emits every possible combination, including repetitions, of the items in list in sets of size r. Eg: 
    (combinations-with-replacement '(a b c) 2) -(values)-> (a a) (a b) (a c) 
  (b b) (b c) (c c)"
   (labels ((proc (data output r)
-	     (if (= 0 r)
+	     (if (zerop r)
 		 (apply #'yield (reverse output))
-		 (loop for d on data
-		      do (proc d
-			       (cons (car d) output)
-			       (1- r))))))
-    (if (and (length list) (<= r (length list) ))
-	(proc list nil r)
-	(lambda () 'generator-stop))))
+		 (loop for d on data do
+		      (proc d
+			    (cons (car d) output)
+			    (1- r))))))
+    (if (< (length list) r)
+	(lambda () 'generator-stop)
+        (proc list nil r))))
