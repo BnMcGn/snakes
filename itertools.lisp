@@ -240,3 +240,41 @@ Note also that this implementation of tee does not create independent copies of 
     (if (< (length list) r)
 	(lambda () 'generator-stop)
         (proc list nil r))))
+
+(defun reduce-generator (function generator
+                         &key (initial-value (funcall generator) initial-value-p))
+  "Reduce items from generator using a binary operation
+FUNCTION. Reduction is left-associative. Optional INITIAL-VALUE is
+logically placed before items in the generator. Eg:
+  (foldl #'+ (list->generator '(1 2 3 4))) -> 10
+
+For consistency with CL:REDUCE do the following if the generator has insufficient items:
+
+* If GENERATOR has no values, return result of FUNCTION called without arguments.
+* If GENERATOR has exactly one item, return that item."
+  (labels ((foldl (x)
+             (let ((value (funcall generator)))
+               (if (eq value 'generator-stop) x
+                   (foldl (funcall function x value))))))
+    (if (and (not initial-value-p)
+             (eq initial-value 'generator-stop))
+        (funcall function)
+        (foldl initial-value))))
+
+(defgenerator take-as-generator (n generator &key (fail-if-short t))
+  "This function has the same meaning as TAKE but returns a generator
+instead of a list. Eg:
+
+  (generator->list (take-as-generator 10 (list->generator '(1 2 3)))) -> Signals a condition
+  (generator->list (take-as-generator 10 (list->generator '(1 2 3)) :fail-if-short nil)) -> (1 2 3)
+  (generator->list (take-as-generator 3 (repeat 1))) -> (1 1 1)"
+  (declare (type (integer 1) n))
+  (let ((count 0))
+    (do-generator (g generator)
+      (yield g)
+      (incf count)
+      (when (= count n)
+        (yield 'generator-stop))))
+  (when fail-if-short
+    (error 'insufficient-items
+	   "Insufficient items in generator")))

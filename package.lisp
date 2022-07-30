@@ -57,4 +57,6 @@
    #:permutations
    #:combinations
    #:combinations-with-replacement
+   #:reduce-generator
+   #:take-as-generator
    #:in-generator))
