@@ -277,4 +277,4 @@ instead of a list. Eg:
         (yield 'generator-stop))))
   (when fail-if-short
     (error 'insufficient-items
-	   "Insufficient items in generator")))
+	   :format-control "Insufficient items in generator")))

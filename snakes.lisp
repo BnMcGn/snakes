@@ -5,7 +5,7 @@
 ;;; "snakes" goes here. Hacks and glory await!
 
 
-(define-condition snakes-error (error) ())
+(define-condition snakes-error (simple-error) ())
 
 (define-condition insufficient-items (snakes-error) ()
   (:documentation "Generator has run out of items before expected."))
@@ -151,7 +151,7 @@
 	    do (push val (elt stor j)))
 	 (if fail-if-short
 	     (error 'insufficient-items 
-		    "Insufficient items in generator")
+		    :format-control "Insufficient items in generator")
 	     (return (apply #'values (mapcar #'reverse stor))))))
       (apply #'values (mapcar #'nreverse stor)))))
 
